@@ -1,0 +1,127 @@
+/* Header */
+.header {
+  background-color: #6ac3fa;
+  border-bottom: 1px solid #D1D5DB; /* gray-300 */
+  padding: 0.75rem 1rem;            /* py-3 px-4 */
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: fixed;
+  top: 0; left: 0;
+  width: 100%;
+  z-index: 20;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.toggleBtn {
+  cursor: pointer;
+  /* esto convierte el contenedor en columna para que las líneas se apilen */
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.toggleLine {
+  /* ahora sí aplican width/height/margen */
+  display: block;
+  width: 1.5rem;           /* igual que w-6 */
+  height: 2px;             /* igual que h-0.5 */
+  background-color: #4A5568; /* gray-600 */
+  margin: 0.25rem 0;       /* mb-1 y mt-1 */
+  transition: transform .2s, opacity .2s;
+}
+
+.toggleOpen1 { transform: rotate(45deg) translateY(0.375rem); }
+.toggleOpen2 { opacity: 0; }
+.toggleOpen3 { transform: rotate(-45deg) translateY(-0.375rem); }
+
+/* Logo */
+.logoWrapper {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem; /* gap-2 */
+}
+.logoImg {
+  width: 1.75rem; /* w-7 */
+}
+.logoText {
+  font-weight: 700;
+  font-size: 1.125rem; /* text-lg */
+  color: #4A5568;      /* gray-600 */
+}
+
+/* Acciones (chat, help, noti, avatar, logout) */
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 1rem; /* gap-4 */
+}
+.actionIcon {
+  width: 1.5rem;  /* w-6 */
+  height: 1.5rem; /* h-6 */
+  color: #4A5568; /* gray-600 (usar filtro o SVG inline si no aplica a img) */
+}
+.userImg {
+  width: 2rem;  /* w-8 */
+  height: 2rem; /* h-8 */
+  border-radius: 9999px;
+}
+.logoutBtn {
+  background-color: #2C7A7B; /* teal-600 */
+  padding: 0.25rem 0.75rem;  /* py-1 px-3 */
+  color: #FFFFFF;
+  border-radius: 0.375rem;   /* rounded */
+  transition: background-color .2s;
+}
+.logoutBtn:hover {
+  background-color: #38B2AC; /* teal-500 */
+}
+
+/* Sidebar */
+.sidebar {
+  background-color: #c8e9fd;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  position: fixed;
+  top: 0; left: 0;
+  height: 100%;
+  padding-top: 4rem; /* pt-16 */
+  transition: width .3s;
+}
+.sidebarOpen   { width: 14rem; } /* w-56 */
+.sidebarClosed { width: 4rem;  } /* w-16 */
+
+/* Lista de links */
+.navList {
+  margin-top: 1rem;      /* mt-4 */
+  list-style: none;
+  padding: 0;
+  row-gap: 0.5rem;       /* space-y-2 */
+  display: flex;
+  flex-direction: column;
+}
+.navLink {
+  display: flex;
+  align-items: center;
+  gap: 1rem;             /* gap-4 */
+  padding: 0.5rem 1rem;   /* py-2 px-4 */
+  color: #4A5568;        /* gray-700 */
+  border-radius: 0.375rem;
+  text-decoration: none;
+  transition: background-color .2s, color .2s;
+}
+.navLink:hover {
+  background-color: #EDF2F7; /* gray-100 */
+  color: #4A5568;            /* gray-600 */
+}
+.navActive {
+  background-color: #EDF2F7; /* gray-100 */
+  color: #4A5568;            /* gray-600 */
+}
+
+/* Main shift */
+.main {
+  padding-top: 4rem; /* pt-16 */
+  transition: padding .3s;
+}
+.mainShift   { padding-left: 14rem; } /* pl-56 */
+.mainNoShift { padding-left: 4rem;  } /* pl-16 */

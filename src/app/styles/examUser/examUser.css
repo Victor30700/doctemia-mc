@@ -1,0 +1,102 @@
+/* src/app/styles/examUser/examUser.css */
+
+/* Contenedor principal */
+.exam-user-container {
+  max-width: 1200px;
+  margin: 2rem auto;
+  padding: 0 1rem;
+}
+
+/* Título */
+.exam-user-container > h1 {
+  font-size: 2rem;
+  color: #2c3e50;
+  text-align: center;
+  margin-bottom: 2rem;
+}
+
+/* Lista de exámenes */
+.exam-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+/* Tarjeta de examen */
+.exam-card {
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(8px);
+  border-radius: 12px;
+  box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+  padding: 1.5rem;
+  flex: 1 1 calc(33.333% - 1.5rem);
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.exam-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 24px rgba(0,0,0,0.15);
+}
+
+/* Contenido de la tarjeta */
+.exam-card h2 {
+  margin: 0 0 0.75rem;
+  font-size: 1.5rem;
+  color: #1f3a93;
+}
+
+.exam-card p {
+  flex: 1;
+  margin: 0 0 1rem;
+  color: #555;
+  line-height: 1.4;
+}
+
+/* Botón de iniciar examen */
+.exam-card .start-button {
+  display: inline-block;
+  text-align: center;
+  padding: 0.75rem 1.25rem;
+  background: #1f3a93;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 1rem;
+  text-decoration: none;
+  transition: background 0.2s ease;
+  cursor: pointer;
+}
+
+.exam-card .start-button:hover {
+  background: #162f6f;
+}
+
+/* Mensajes de estado */
+.loading-text,
+.empty-text {
+  text-align: center;
+  color: #888;
+  font-size: 1rem;
+  margin-top: 2rem;
+}
+
+/* Responsive */
+@media (max-width: 992px) {
+  .exam-card {
+    flex: 1 1 calc(50% - 1.5rem);
+  }
+}
+
+@media (max-width: 600px) {
+  .exam-card {
+    flex: 1 1 100%;
+  }
+  .exam-user-container > h1 {
+    font-size: 1.75rem;
+  }
+}

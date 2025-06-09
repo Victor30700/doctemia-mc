@@ -1,0 +1,96 @@
+/* Contenedor principal */
+.resultados-container {
+  max-width: 900px;
+  margin: 2rem auto;
+  padding: 1.5rem;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+}
+
+/* Título */
+.page-title {
+  font-size: 1.75rem;
+  color: #2c3e50;
+  text-align: center;
+  margin-bottom: 1rem;
+}
+
+/* Botón volver */
+.back-button {
+  display: inline-block;
+  margin-bottom: 1.5rem;
+  padding: 0.5rem 1rem;
+  background: #ecf0f1;
+  color: #2c3e50;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+.back-button:hover {
+  background: #d0d3d4;
+}
+
+/* Tabla de resultados */
+.resultados-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+}
+.resultados-table th,
+.resultados-table td {
+  padding: 0.75rem;
+  border-bottom: 1px solid #e0e0e0;
+  text-align: left;
+}
+.resultados-table th {
+  background: #f5f7fa;
+  font-weight: 600;
+  color: #34495e;
+}
+
+/* Estados */
+.status-approved {
+  color: #27ae60;
+  font-weight: 600;
+}
+.status-failed {
+  color: #e74c3c;
+  font-weight: 600;
+}
+
+/* Texto de carga y mensajes */
+.loading-text,
+.empty-text {
+  text-align: center;
+  color: #7f8c8d;
+  font-size: 1rem;
+  margin-top: 2rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .resultados-table th,
+  .resultados-table td {
+    padding: 0.5rem;
+    font-size: 0.9rem;
+  }
+  .page-title {
+    font-size: 1.5rem;
+  }
+}
+@media (max-width: 480px) {
+  .resultados-container {
+    margin: 1rem;
+    padding: 1rem;
+  }
+  .resultados-table {
+    display: block;
+    overflow-x: auto;
+  }
+  .resultados-table th,
+  .resultados-table td {
+    white-space: nowrap;
+  }
+}

@@ -1,0 +1,53 @@
+/* Archivo: styles/protection.css */
+
+/* ==== Deshabilitar selección de texto globalmente en páginas de video ==== */
+.video-protection {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ==== Deshabilitar arrastrar elementos (todas las etiquetas internas) ==== */
+.video-protection * {
+  -webkit-user-drag: none;
+  -khtml-user-drag: none;
+  -moz-user-drag: none;
+  -o-user-drag: none;
+  user-drag: none;
+  /* Evitar que imágenes y vídeos se puedan arrastrar */
+  pointer-events: auto;
+}
+
+/* ==== Ocultar color de selección de texto ==== */
+.video-protection ::selection {
+  background: transparent;
+  color: inherit;
+}
+.video-protection ::-moz-selection {
+  background: transparent;
+  color: inherit;
+}
+
+/* ==== Proteger contenedor de video ==== */
+.protected-video-container {
+  position: relative;
+  overflow: hidden;
+  background: #000;
+}
+
+/* ==== Overlay de protección sobre el video (opcional, semi-transparente) ==== */
+.protected-video-container::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  pointer-events: none;
+  /* Puedes ajustar la opacidad según lo que busques */
+  background: rgba(0,0,0,0.02);
+  z-index: 2;
+}
