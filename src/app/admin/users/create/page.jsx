@@ -3,9 +3,11 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Swal from 'sweetalert2';
+import { useTheme } from '@/context/ThemeContext'; // 1. Importar el hook de tema
 
-export default function CreateUserPage() { // Puedes cambiar el nombre si quieres, ej: CreateUserPage
+export default function CreateUserPage() {
   const router = useRouter();
+  const { isDark } = useTheme(); // 2. Obtener el estado del tema
   const [form, setForm] = useState({
     fullName: '',
     fechaNacimiento: '',
@@ -16,6 +18,14 @@ export default function CreateUserPage() { // Puedes cambiar el nombre si quiere
     email: '',
     password: '',
   });
+
+  // 3. Definir estilos para SweetAlert2
+  const swalTheme = {
+    background: isDark ? '#1f2937' : '#ffffff',
+    color: isDark ? '#f9fafb' : '#111827',
+    confirmButtonColor: '#3b82f6',
+    cancelButtonColor: '#ef4444',
+  };
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -30,7 +40,7 @@ export default function CreateUserPage() { // Puedes cambiar el nombre si quiere
       .map(([k]) => k);
 
     if (missing.length) {
-      await Swal.fire('Campos incompletos', `Por favor, rellena los siguientes campos: ${missing.join(', ')}`, 'warning');
+      await Swal.fire({ title: 'Campos incompletos', text: `Por favor, rellena los siguientes campos: ${missing.join(', ')}`, icon: 'warning', ...swalTheme });
       return;
     }
 
@@ -38,7 +48,7 @@ export default function CreateUserPage() { // Puedes cambiar el nombre si quiere
       const res = await fetch('/api/create-user', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, rol: 'user' }), // Se asigna rol 'user' por defecto
+        body: JSON.stringify({ ...form, rol: 'user' }),
       });
 
       if (!res.ok) {
@@ -46,86 +56,120 @@ export default function CreateUserPage() { // Puedes cambiar el nombre si quiere
         throw new Error(data.error || 'No se pudo crear el usuario.');
       }
 
-      await Swal.fire(
-        '¡Usuario Creado!',
-        'El usuario ha sido registrado correctamente.',
-        'success'
-      );
-      // Redirige de vuelta a la lista de usuarios tras crear uno nuevo.
+      await Swal.fire({ title: '¡Usuario Creado!', text: 'El usuario ha sido registrado correctamente.', icon: 'success', ...swalTheme });
       router.push('/admin/users');
     } catch (err) {
-      await Swal.fire('Error', err.message, 'error');
+      await Swal.fire({ title: 'Error', text: err.message, icon: 'error', ...swalTheme });
     }
+  };
+  
+  // 4. Definir objetos de estilo para reutilizarlos y mantener el código limpio
+  const inputStyle = {
+    backgroundColor: isDark ? '#374151' : '#f9fafb',
+    color: isDark ? '#f9fafb' : '#111827',
+    borderColor: isDark ? '#4b5563' : '#d1d5db'
   };
 
   return (
-    // Se ha añadido un estilo de fondo y contenedor para que se vea mejor en el layout de admin
-    <div className="min-h-screen bg-gray-900 text-white p-4 md:p-8">
-      <div className="max-w-4xl mx-auto bg-gray-800 p-8 rounded-lg shadow-lg">
-        <h1 className="text-3xl font-bold mb-6">Crear Nuevo Usuario</h1>
+    <div 
+      className="min-h-screen p-4 md:p-8 transition-colors duration-300"
+      style={{ backgroundColor: isDark ? '#111827' : '#f9fafb' }}
+    >
+      <div 
+        className="max-w-4xl mx-auto p-6 md:p-8 rounded-lg shadow-lg border"
+        style={{ 
+          backgroundColor: isDark ? '#1f2937' : '#ffffff',
+          borderColor: isDark ? '#374151' : '#e5e7eb'
+        }}
+      >
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-3xl font-bold" style={{ color: isDark ? '#60a5fa' : '#3b82f6' }}>
+            Crear Nuevo Usuario
+          </h1>
+          <button onClick={() => router.push('/admin/users')} className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition">
+            Volver
+          </button>
+        </div>
         <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Nombre Completo */}
           <input
             name="fullName"
             placeholder="Nombre completo"
             value={form.fullName}
             onChange={handleChange}
-            className="input-style"
+            className="w-full p-3 border rounded-lg"
+            style={inputStyle}
           />
+          {/* Fecha de Nacimiento */}
           <input
             name="fechaNacimiento"
             type="date"
             value={form.fechaNacimiento}
             onChange={handleChange}
-            className="input-style"
+            className="w-full p-3 border rounded-lg"
+            style={inputStyle}
           />
+          {/* Sexo */}
           <select
             name="sexo"
             value={form.sexo}
             onChange={handleChange}
-            className="input-style"
+            className="w-full p-3 border rounded-lg"
+            style={inputStyle}
           >
             <option value="">Selecciona el sexo</option>
             <option value="Masculino">Masculino</option>
             <option value="Femenino">Femenino</option>
             <option value="Prefiero no decirlo">Prefiero no decirlo</option>
           </select>
+          {/* Teléfono */}
           <input
             name="telefono"
             placeholder="Teléfono"
             value={form.telefono}
             onChange={handleChange}
-            className="input-style"
+            className="w-full p-3 border rounded-lg"
+            style={inputStyle}
           />
+          {/* Universidad */}
           <input
             name="universidad"
             placeholder="Universidad"
             value={form.universidad}
             onChange={handleChange}
-            className="input-style"
+            className="w-full p-3 border rounded-lg"
+            style={inputStyle}
           />
+          {/* Profesión */}
           <input
             name="profesion"
             placeholder="Profesión / Cargo"
             value={form.profesion}
             onChange={handleChange}
-            className="input-style"
+            className="w-full p-3 border rounded-lg"
+            style={inputStyle}
           />
+          {/* Email */}
           <input
             name="email"
             type="email"
             placeholder="Correo electrónico"
             value={form.email}
             onChange={handleChange}
-            className="input-style md:col-span-2"
+            className="w-full p-3 border rounded-lg md:col-span-2"
+            style={inputStyle}
           />
+          {/* Contraseña */}
           <input
             name="password"
             type="password"
             placeholder="Contraseña"
             value={form.password}
             onChange={handleChange}
-            className="input-style md:col-span-2"
+            className="w-full p-3 border rounded-lg md:col-span-2"
+            style={inputStyle}
           />
+          {/* Botón de Enviar */}
           <button
             type="submit"
             className="md:col-span-2 mt-4 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-colors duration-200"
@@ -134,26 +178,6 @@ export default function CreateUserPage() { // Puedes cambiar el nombre si quiere
           </button>
         </form>
       </div>
-      {/* Estilos para los inputs, puedes moverlos a un archivo CSS global */}
-      <style jsx>{`
-        .input-style {
-          background-color: #374151;
-          color: white;
-          border: 1px solid #4b5563;
-          border-radius: 8px;
-          padding: 12px;
-          width: 100%;
-          transition: border-color 0.2s, box-shadow 0.2s;
-        }
-        .input-style:focus {
-          outline: none;
-          border-color: #3b82f6;
-          box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.5);
-        }
-        .input-style::placeholder {
-            color: #9ca3af;
-        }
-      `}</style>
     </div>
   );
 }
