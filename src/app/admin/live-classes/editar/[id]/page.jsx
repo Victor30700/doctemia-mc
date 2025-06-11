@@ -1,36 +1,82 @@
 // src/app/admin/live-classes/editar/[id]/page.jsx
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react'; // Importar useRef
 import { useRouter, useParams } from 'next/navigation';
 import { db } from '@/lib/firebase';
 import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import Swal from 'sweetalert2';
+import { useTheme } from '@/context/ThemeContext';
 
 export default function EditarClaseEnVivo() {
   const router = useRouter();
   const { id } = useParams();
-  const [form, setForm] = useState(null);
+  // Inicializamos form como un objeto vacío, no null, para evitar problemas con los valores controlados.
+  const [form, setForm] = useState({});
   const [loading, setLoading] = useState(true);
+  const { isDark, isLoaded } = useTheme();
+
+  // Usamos useRef para rastrear si los datos iniciales ya se cargaron
+  const initialDataLoaded = useRef(false);
+
+  // Definir estilos para SweetAlert2
+  const swalTheme = {
+    background: isDark ? '#1f2937' : '#ffffff',
+    color: isDark ? '#f9fafb' : '#111827',
+    confirmButtonColor: '#3b82f6',
+    cancelButtonColor: '#ef4444',
+  };
+
+  // Estilos reutilizables para la UI
+  const sectionStyle = {
+    backgroundColor: isDark ? '#1f2937' : '#ffffff',
+    borderColor: isDark ? '#374151' : '#e5e7eb',
+    color: isDark ? '#f9fafb' : '#111827',
+  };
+  const headingStyle = {
+    color: isDark ? '#60a5fa' : '#3b82f6',
+  };
+  const labelStyle = {
+    color: isDark ? '#f9fafb' : '#111827',
+  };
+  const inputStyle = {
+    backgroundColor: isDark ? '#374151' : '#ffffff',
+    color: isDark ? '#f9fafb' : '#111827',
+    borderColor: isDark ? '#4b5563' : '#d1d5db',
+  };
+  const loadingTextStyle = {
+    color: isDark ? '#f9fafb' : '#111827',
+  };
+  const sectionLoadingStyle = {
+    backgroundColor: isDark ? '#111827' : '#f9fafb',
+  };
 
   useEffect(() => {
     const cargarClase = async () => {
+      // Solo cargar los datos iniciales si aún no se han cargado
+      if (initialDataLoaded.current) return;
+
       try {
         const docRef = doc(db, 'clasesEnVivo', id);
         const docSnap = await getDoc(docRef);
         if (docSnap.exists()) {
           setForm(docSnap.data());
+          initialDataLoaded.current = true; // Marcar que los datos iniciales ya se cargaron
         } else {
-          Swal.fire('Error', 'Clase no encontrada', 'error');
+          Swal.fire({ title: 'Error', text: 'Clase no encontrada', icon: 'error', ...swalTheme });
           router.push('/admin/live-classes');
         }
       } catch (err) {
-        Swal.fire('Error', 'No se pudo cargar la clase', 'error');
+        Swal.fire({ title: 'Error', text: 'No se pudo cargar la clase', icon: 'error', ...swalTheme });
       } finally {
         setLoading(false);
       }
     };
-    cargarClase();
-  }, [id, router]);
+
+    if (isLoaded) {
+      cargarClase();
+    }
+  }, [id, router, isLoaded, swalTheme]); // Mantener swalTheme si es necesario para re-renderizar estilos de SweetAlert2,
+                                        // aunque la carga de datos ya no se activará por cambios en el tema.
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -41,19 +87,26 @@ export default function EditarClaseEnVivo() {
     e.preventDefault();
     try {
       await updateDoc(doc(db, 'clasesEnVivo', id), form);
-      Swal.fire('Actualizado', 'La clase ha sido actualizada.', 'success');
+      Swal.fire({ title: 'Actualizado', text: 'La clase ha sido actualizada.', icon: 'success', ...swalTheme });
       router.push('/admin/live-classes');
     } catch (err) {
       console.error(err);
-      Swal.fire('Error', 'No se pudo actualizar la clase.', 'error');
+      Swal.fire({ title: 'Error', text: 'No se pudo actualizar la clase.', icon: 'error', ...swalTheme });
     }
   };
 
-  if (loading || !form) return <div className="p-8 text-center">Cargando clase...</div>;
+  // Mostrar el spinner de carga si aún no se han cargado los datos o el tema
+  if (loading || !isLoaded || Object.keys(form).length === 0) { // Comprobamos si form es un objeto vacío también
+    return (
+      <section style={sectionLoadingStyle} className="p-8 min-h-screen text-center">
+        <p style={loadingTextStyle} className="animate-pulse">Cargando clase...</p>
+      </section>
+    );
+  }
 
   return (
-    <section className="p-6 max-w-3xl mx-auto bg-white shadow rounded-lg">
-      <h1 className="text-2xl font-bold mb-4 text-blue-700">Editar Clase en Vivo</h1>
+    <section className="p-6 max-w-3xl mx-auto shadow rounded-lg border" style={sectionStyle}>
+      <h1 className="text-2xl font-bold mb-4" style={headingStyle}>Editar Clase en Vivo</h1>
       <form onSubmit={handleSubmit} className="space-y-4">
         {[
           { label: 'Título', name: 'titulo', type: 'text', required: true },
@@ -66,22 +119,26 @@ export default function EditarClaseEnVivo() {
           { label: 'ID de la Reunión (si aplica)', name: 'idReunion', type: 'text', required: false },
         ].map(({ label, name, type, required }) => (
           <div key={name}>
-            <label className="block text-gray-700 font-medium mb-1">{label}:</label>
+            <label className="block font-medium mb-1" style={labelStyle}>{label}:</label>
             {type === 'textarea' ? (
               <textarea
                 name={name}
+                // Asegúrate de que el valor nunca sea undefined o null para los campos controlados
                 value={form[name] || ''}
                 onChange={handleChange}
                 rows={3}
-                className="w-full border border-gray-300 rounded px-3 py-2"
+                className="w-full rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                style={inputStyle}
               ></textarea>
             ) : (
               <input
                 type={type}
                 name={name}
+                // Asegúrate de que el valor nunca sea undefined o null para los campos controlados
                 value={form[name] || ''}
                 onChange={handleChange}
-                className="w-full border border-gray-300 rounded px-3 py-2"
+                className="w-full rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                style={inputStyle}
                 required={required}
               />
             )}
@@ -89,10 +146,10 @@ export default function EditarClaseEnVivo() {
         ))}
 
         <div className="flex justify-between mt-6">
-          <button type="button" onClick={() => router.push('/admin/live-classes')} className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded">
+          <button type="button" onClick={() => router.push('/admin/live-classes')} className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded transition">
             Cancelar
           </button>
-          <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded">
+          <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded transition">
             Actualizar Clase
           </button>
         </div>

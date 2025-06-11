@@ -87,7 +87,10 @@ export default function NavbarUser({ children }) {
           </button>
           {user && !isMobile && (
             <>
+              <Link href="/app/profile" className="flex items-center gap-2">
               <img src={user.photoURL || '/icons/user.jpg'} alt="user" className={`w-8 h-8 rounded-full border-2 ${isDark ? 'border-gray-600' : 'border-gray-200'}`} />
+              </Link>
+              
               <button onClick={signOut} className={`px-4 py-2 rounded-lg font-medium transition ${isDark ? 'bg-blue-500 hover:bg-blue-600 text-white' : 'bg-blue-600 hover:bg-blue-700 text-white'}`}>
                 Cerrar sesión
               </button>

@@ -1,10 +1,10 @@
 'use client';
 import { useAuth } from '@/context/AuthContext';
 import { usePathname } from 'next/navigation';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react'; // Importar useRef
 import Link from 'next/link';
 import { db } from '@/lib/firebase';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, onSnapshot } from 'firebase/firestore'; // Importar onSnapshot para tiempo real
 import { useTheme } from '@/context/ThemeContext';
 import {
   Moon, Sun, Home, BookOpen, FileText, Users,
@@ -19,6 +19,10 @@ export default function AdminNavbar({ children }) {
   const [showNotifications, setShowNotifications] = useState(false);
   const { isDark, toggleTheme, isLoaded } = useTheme();
   const [isMobile, setIsMobile] = useState(false);
+
+  // Referencias para el botón de la campana y el contenedor de notificaciones
+  const bellButtonRef = useRef(null);
+  const notificationsPanelRef = useRef(null);
 
   // Hook para detectar si es vista móvil y ajustar el sidebar
   useEffect(() => {
@@ -40,20 +44,43 @@ export default function AdminNavbar({ children }) {
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
   const toggleNotifications = () => setShowNotifications(!showNotifications);
 
-  // Hook para obtener notificaciones de Firebase
+  // Hook para cerrar el panel de notificaciones al hacer clic fuera
   useEffect(() => {
-    const fetchNotifications = async () => {
-      if (user) {
-        try {
-          const snapshot = await getDocs(collection(db, 'solicitudes'));
-          const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-          setNotifications(data);
-        } catch (error) {
-          console.error('Error fetching notifications:', error);
-        }
+    const handleClickOutside = (event) => {
+      if (
+        notificationsPanelRef.current &&
+        !notificationsPanelRef.current.contains(event.target) &&
+        bellButtonRef.current &&
+        !bellButtonRef.current.contains(event.target)
+      ) {
+        setShowNotifications(false);
       }
     };
-    fetchNotifications();
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
+
+  // Hook para obtener notificaciones de Firebase en tiempo real
+  useEffect(() => {
+    let unsubscribe;
+    if (user) {
+      // Usar onSnapshot para escuchar cambios en tiempo real
+      unsubscribe = onSnapshot(collection(db, 'solicitudes'), (snapshot) => {
+        const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+        setNotifications(data);
+      }, (error) => {
+        console.error('Error fetching real-time notifications:', error);
+      });
+    }
+    // Devolver la función de limpieza para desuscribirse cuando el componente se desmonte
+    return () => {
+      if (unsubscribe) {
+        unsubscribe();
+      }
+    };
   }, [user]);
 
   // Items de navegación del sidebar
@@ -71,6 +98,18 @@ export default function AdminNavbar({ children }) {
   const headerStyle = { backgroundColor: isDark ? '#1f2937' : '#ffffff', borderBottomColor: isDark ? '#374151' : '#e5e7eb', color: isDark ? '#f9fafb' : '#111827' };
   const sidebarStyle = { backgroundColor: isDark ? '#1f2937' : '#ffffff', borderRightColor: isDark ? '#374151' : '#e5e7eb' };
   const mainStyle = { backgroundColor: isDark ? '#111827' : '#f9fafb' };
+  const notificationPanelStyle = {
+    backgroundColor: isDark ? '#2d3748' : '#ffffff', // Fondo para el panel de notificaciones
+    borderColor: isDark ? '#4a5568' : '#e2e8f0', // Borde
+    color: isDark ? '#e2e8f0' : '#4a5568', // Color del texto
+  };
+  const notificationItemStyle = {
+    borderBottomColor: isDark ? '#4a5568' : '#e2e8f0', // Borde inferior de cada notificación
+  };
+  const emptyNotificationStyle = {
+    color: isDark ? '#cbd5e0' : '#718096', // Color del texto "No hay notificaciones"
+  };
+
 
   // Loading skeleton
   if (!isLoaded) {
@@ -87,8 +126,8 @@ export default function AdminNavbar({ children }) {
     <>
       {/* Fondo oscuro overlay para modo móvil */}
       {isMobile && isSidebarOpen && (
-        <div 
-          className="fixed inset-0 bg-black/60 z-30" 
+        <div
+          className="fixed inset-0 bg-black/60 z-30"
           onClick={toggleSidebar}
         ></div>
       )}
@@ -111,10 +150,47 @@ export default function AdminNavbar({ children }) {
           <button onClick={toggleTheme} className={`p-2 rounded-lg transition-all duration-200 ${isDark ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'}`}>
             {isDark ? <Sun className="w-5 h-5 text-yellow-500" /> : <Moon className="w-5 h-5 text-gray-700" />}
           </button>
-          <button onClick={toggleNotifications} className={`relative p-2 rounded-lg transition-all duration-200 ${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}>
+          <button
+            ref={bellButtonRef} // Asignar la referencia
+            onClick={toggleNotifications}
+            className={`relative p-2 rounded-lg transition-all duration-200 ${isDark ? 'hover:bg-gray-700' : 'hover:bg-gray-100'}`}
+          >
             <Bell className={`w-6 h-6 ${isDark ? 'text-gray-300' : 'text-gray-600'}`} />
             {notifications.length > 0 && <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-medium">{notifications.length > 9 ? '9+' : notifications.length}</span>}
           </button>
+
+          {/* Ventana de notificaciones */}
+          {showNotifications && (
+            <div
+              ref={notificationsPanelRef} // Asignar la referencia
+              className="absolute right-4 top-16 w-80 max-h-[80vh] overflow-y-auto rounded-lg shadow-xl border z-50 flex flex-col"
+              style={notificationPanelStyle}
+            >
+              <h3 className={`text-lg font-semibold px-4 py-3 border-b ${isDark ? 'border-gray-700 text-blue-400' : 'border-gray-200 text-blue-600'}`}>Notificaciones</h3>
+              <div className="flex-grow p-2">
+                {notifications.length === 0 ? (
+                  <p className="text-center p-4" style={emptyNotificationStyle}>No hay notificaciones pendientes.</p>
+                ) : (
+                  notifications.map((notification) => (
+                    <div key={notification.id} className="p-3 border-b last:border-b-0" style={notificationItemStyle}>
+                      <p className="text-sm font-medium" style={notificationPanelStyle}>
+                        <span className="font-semibold">{notification.userName}</span> solicitó el curso <span className="font-semibold">{notification.courseName}</span>.
+                      </p>
+                    </div>
+                  ))
+                )}
+              </div>
+              {notifications.length > 0 && (
+                 <div className={`px-4 py-2 border-t ${isDark ? 'border-gray-700' : 'border-gray-200'} text-right`}>
+                 {/* Puedes añadir un botón para 'Ver todas' o 'Marcar como leídas' aquí */}
+                 <Link href="/admin/solicitudes" className={`text-sm font-medium ${isDark ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-800'}`}>
+                   Ver todas las solicitudes
+                 </Link>
+               </div>
+              )}
+            </div>
+          )}
+
           {!isMobile && user && (
             <>
               <img src={user.photoURL || "/icons/user.jpg"} alt="user" className={`w-8 h-8 rounded-full border-2 ${isDark ? 'border-gray-600' : 'border-gray-200'}`} />
@@ -165,14 +241,14 @@ export default function AdminNavbar({ children }) {
           </div>
         )}
       </div>
-      
+
       {/* Contenido Principal */}
-      <main 
+      <main
         className="pt-16 transition-all duration-300 ease-in-out min-h-screen"
-        style={{ 
+        style={{
             // En móvil, el padding izquierdo es fijo. En desktop, cambia con el sidebar.
             paddingLeft: isMobile ? '4rem' : (isSidebarOpen ? '16rem' : '4rem'),
-            ...mainStyle 
+            ...mainStyle
         }}
       >
         <div className="p-0">
