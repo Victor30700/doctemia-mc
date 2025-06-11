@@ -7,6 +7,13 @@ import { ThemeProvider } from '@/context/ThemeContext';
 export const metadata = {
   title: 'Doctemia MC',
   description: 'Panel administrativo',
+  icons: {
+    icon: [
+      { url: '/iconDoc.svg', type: 'image/svg+xml' }, // Ruta a tu SVG en la carpeta public
+    ],
+    // Puedes añadir otros iconos aquí si los tienes, por ejemplo:
+    // apple: '/apple-touch-icon.png',
+  },
 };
 
 export default function RootLayout({ children }) {

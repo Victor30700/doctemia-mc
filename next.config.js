@@ -9,6 +9,7 @@ const nextConfig = {
       's3.ppllstatics.com',
       'firebasestorage.googleapis.com',
       'fiverr-res.cloudinary.com',
+      'lh3.googleusercontent.com',
     ],
     // Patrones remotos
     remotePatterns: [
