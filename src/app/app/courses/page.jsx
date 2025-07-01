@@ -9,7 +9,7 @@ import { useTheme } from '@/context/ThemeContext';
 import Image from 'next/image';
 import Swal from 'sweetalert2';
 
-const NUMERO_WHATSAPP_MAJO = '+59171168130';
+const NUMERO_WHATSAPP_MAJO = '+59168706660';
 const NOMBRE_NEGOCIO_MAJO = 'DOCTEMIA MC';
 
 export default function UserListCoursesPage() {
