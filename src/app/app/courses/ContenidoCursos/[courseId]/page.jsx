@@ -5,13 +5,20 @@ import { useParams, useRouter } from 'next/navigation';
 import { db } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { useAuth } from '@/context/AuthContext';
-import { useTheme } from '@/context/ThemeContext';  // <-- Importa ThemeContext
+import { useTheme } from '@/context/ThemeContext';
 import Swal from 'sweetalert2';
 import ProtectedVideoPlayer from '@/app/components/video/ProtectedVideoPlayer';
 
+// --- Icono para el enlace ---
+const LinkIcon = (props) => (
+    <svg {...props} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.72"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.72-1.72"/>
+    </svg>
+);
+
 export default function ContenidoCursoPage() {
   const { user } = useAuth();
-  const { isDark } = useTheme();  // <-- Obtiene el estado del tema
+  const { isDark } = useTheme();
   const router = useRouter();
   const params = useParams();
   const courseId = params.courseId;
@@ -311,6 +318,26 @@ export default function ContenidoCursoPage() {
               <p className={`${isDark ? 'text-gray-400' : 'text-gray-600'} whitespace-pre-line`}>
                 {courseDetails.description || 'No hay descripción disponible para este curso.'}
               </p>
+              
+              {/* --- INICIO DE LA MEJORA: MOSTRAR LINK DE RESUMEN --- */}
+              {courseDetails.summaryDriveLink && (
+                  <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+                      <h4 className={`text-lg font-semibold mb-3 ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
+                          Recursos Adicionales
+                      </h4>
+                      <a
+                          href={courseDetails.summaryDriveLink}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-sm transition ${isDark ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-200 hover:bg-gray-300 text-gray-800'}`}
+                      >
+                          <LinkIcon className="h-4 w-4" />
+                          Resumen del Curso (Drive)
+                      </a>
+                  </div>
+              )}
+              {/* --- FIN DE LA MEJORA --- */}
+
             </div>
           </div>
 

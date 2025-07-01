@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
-// Importa los iconos de react-icons
+// Importa los iconos de react-icons, incluyendo los nuevos iconos premium
 import {
   AiOutlineHome,
   AiOutlineFile,
@@ -13,13 +13,21 @@ import {
   AiOutlineQuestionCircle,
   AiOutlineVideoCamera,
   AiOutlineUser,
-  AiOutlineLogout
+  AiOutlineLogout,
+  AiFillStar,      // <-- Icono Premium para Cursos
+  AiFillUnlock     // <-- Icono Premium para Mis Cursos
 } from 'react-icons/ai';
 
 const navItems = [
   { href: '/app', label: 'Inicio', Icon: AiOutlineHome },
+  { href: '/app/courses', label: 'Cursos Premiun', Icon: AiFillStar }, // <-- Icono actualizado
+  { href: '/app/courses/cursosPagados', label: 'Mis Cursos Premiun', Icon: AiFillUnlock }, // <-- Icono actualizado
+ 
+  //------------NEW-------------------------------------
   { href: '/app/courses', label: 'Cursos', Icon: AiOutlineFile },
   { href: '/app/courses/cursosPagados', label: 'Mis Cursos', Icon: AiOutlineFileText },
+  //------------NEW-------------------------------------
+  
   { href: '/app/examen-test', label: 'Exámenes', Icon: AiOutlineQuestionCircle },
   { href: '/app/clases-en-vivo', label: 'Clases en Vivo', Icon: AiOutlineVideoCamera },
   { href: '/app/profile', label: 'Perfil', Icon: AiOutlineUser },
@@ -110,7 +118,7 @@ export default function NavbarUser({ children }) {
             {navItems.map(({ href, label, Icon }) => {
               const active = pathname === href || (href !== '/app' && pathname.startsWith(href));
               return (
-                <li key={href}>
+                <li key={`${href}-${label}`}>
                   <Link href={href} className={`flex items-center gap-4 px-2 py-2.5 rounded-lg transition-colors duration-200 ${active ? (isDark ? 'bg-blue-900/30 text-blue-400' : 'bg-blue-100 text-blue-600') : (isDark ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-700')}`}>
                     <Icon className="w-5 h-5 flex-shrink-0" />
                     {isSidebarOpen && <span className="truncate font-medium">{label}</span>}

@@ -206,8 +206,8 @@ export default function CursosPagadosPage() {
     // console.log('[Render] No paid courses details to display. User:', user);
     return (
       <div className={`container mx-auto p-4 text-center ${isDark ? 'bg-gray-900' : 'bg-gray-50'} min-h-screen`}>
-        <h1 className={`text-3xl font-bold mb-6 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Mis Cursos</h1>
-        <p className={`text-lg ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Aún no has adquirido ningún curso.</p>
+        <h1 className={`text-3xl font-bold mb-6 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>Mis Cursos Premiun</h1>
+        <p className={`text-lg ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Aún no has adquirido ningún curso Premiun.</p>
         {/* Mensaje de depuración opcional: */}
         {/* {user && user.cursosPagados && user.cursosPagados.length > 0 && (
             <p className="text-sm text-orange-500 mt-2">(Debug: Tienes {user.cursosPagados.length} IDs de cursos en user.cursosPagados, pero no se pudieron cargar sus detalles. Revisa la consola para ver errores en fetchPaidCoursesDetails.)</p>
@@ -216,7 +216,7 @@ export default function CursosPagadosPage() {
           href="/app/courses" 
           className={`${isDark ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-800'} underline mt-4 inline-block text-lg transition-colors duration-200`}
         >
-          Explorar cursos disponibles
+          Explorar cursos Premiun disponibles
         </Link>
       </div>
     );
@@ -225,7 +225,7 @@ export default function CursosPagadosPage() {
   return (
     <div className={`container mx-auto p-4 min-h-screen ${isDark ? 'bg-gray-900' : 'bg-gray-50'}`}>
       <h1 className={`text-3xl font-bold mb-8 text-center ${isDark ? 'text-gray-100' : 'text-gray-800'}`}>
-        Mis Cursos Adquiridos
+        Mis Cursos Premiun Adquiridos
       </h1>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
         {paidCoursesDetails.map(course => {

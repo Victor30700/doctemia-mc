@@ -4,21 +4,22 @@ import { useParams, useRouter } from 'next/navigation';
 import { db } from '@/lib/firebase';
 import { collection, addDoc, updateDoc, doc } from 'firebase/firestore';
 import Swal from 'sweetalert2';
-import { useTheme } from '@/context/ThemeContext'; // 1. Importar hook
+import { useTheme } from '@/context/ThemeContext';
 
 export default function CourseForm({ course }) {
   const router = useRouter();
   const { id: courseId } = useParams();
-  const { isDark } = useTheme(); // 2. Obtener el estado del tema
+  const { isDark } = useTheme();
 
   const [name, setName] = useState(course?.name || '');
   const [description, setDescription] = useState(course?.description || '');
   const [price, setPrice] = useState(course?.price || '');
   const [image, setImage] = useState(course?.image || '');
+  // Nuevo estado para el enlace del resumen de Drive
+  const [summaryDriveLink, setSummaryDriveLink] = useState(course?.summaryDriveLink || '');
   const [isActive, setIsActive] = useState(course?.isActive !== undefined ? course.isActive : true);
   const [videos, setVideos] = useState(course?.videos || [{ url: '', description: '', order: 1 }]);
 
-  // 3. Definir estilos para SweetAlert2
   const swalTheme = {
     background: isDark ? '#1f2937' : '#ffffff',
     color: isDark ? '#f9fafb' : '#111827',
@@ -51,6 +52,7 @@ export default function CourseForm({ course }) {
       description,
       price: parseFloat(price),
       image,
+      summaryDriveLink, // Añadir el nuevo campo a los datos del curso
       isActive,
       videos: videos.map((video, index) => ({
         url: video.url,
@@ -74,7 +76,6 @@ export default function CourseForm({ course }) {
     }
   };
   
-  // 4. Definir objetos de estilo para reutilizar
   const labelStyle = { color: isDark ? '#d1d5db' : '#374151' };
   const inputStyle = {
     backgroundColor: isDark ? '#374151' : '#ffffff',
@@ -125,6 +126,19 @@ export default function CourseForm({ course }) {
         <div className="space-y-2">
           <label style={labelStyle}>Imagen (URL):</label>
           <input type="text" value={image} onChange={(e) => setImage(e.target.value)} className="w-full p-2 border rounded" style={inputStyle} required />
+        </div>
+
+        {/* Campo para el Resumen del Curso (Link de Drive) */}
+        <div className="space-y-2">
+          <label style={labelStyle}>Resumen del curso (Link Drive):</label>
+          <input 
+            type="text" 
+            value={summaryDriveLink} 
+            onChange={(e) => setSummaryDriveLink(e.target.value)} 
+            className="w-full p-2 border rounded" 
+            style={inputStyle} 
+            placeholder="https://docs.google.com/..."
+          />
         </div>
 
         <div className="space-y-2">

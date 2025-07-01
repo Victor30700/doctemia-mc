@@ -14,8 +14,9 @@ export default function NuevaPreguntaPage() {
   const [scheduledAt, setScheduledAt] = useState('');
   const [activateManually, setActivateManually] = useState(false);
   const [numQuestions, setNumQuestions] = useState(1);
+  const [timer, setTimer] = useState(0); // Nuevo estado para el temporizador en minutos
   const [questions, setQuestions] = useState([
-    { questionText: '', options: ['', '', ''], correctOptionIndex: 0 }
+    { questionText: '', type: 'multiple-choice', options: ['', '', ''], correctOptionIndex: 0, correctAnswer: '' }
   ]);
   const [loading, setLoading] = useState(false);
 
@@ -25,7 +26,7 @@ export default function NuevaPreguntaPage() {
       setNumQuestions(count);
       const newQuestions = Array(count)
         .fill(null)
-        .map((_, i) => questions[i] || { questionText: '', options: ['', '', ''], correctOptionIndex: 0 });
+        .map((_, i) => questions[i] || { questionText: '', type: 'multiple-choice', options: ['', '', ''], correctOptionIndex: 0, correctAnswer: '' });
       setQuestions(newQuestions);
     }
   };
@@ -35,7 +36,20 @@ export default function NuevaPreguntaPage() {
     if (field === 'option') {
       const [optIndex, optValue] = value;
       newQuestions[index].options[optIndex] = optValue;
-    } else {
+    } else if (field === 'type') {
+        newQuestions[index].type = value;
+        // Reiniciar campos al cambiar de tipo para evitar datos inconsistentes
+        if (value === 'open-ended') {
+            newQuestions[index].options = [];
+            newQuestions[index].correctOptionIndex = -1; // o null
+            newQuestions[index].correctAnswer = '';
+        } else { // 'multiple-choice'
+            newQuestions[index].options = ['', '', ''];
+            newQuestions[index].correctOptionIndex = 0;
+            newQuestions[index].correctAnswer = '';
+        }
+    }
+    else {
       newQuestions[index][field] = value;
     }
     setQuestions(newQuestions);
@@ -57,7 +71,7 @@ export default function NuevaPreguntaPage() {
     } else if (corr > optionIndex) {
       corr--;
     }
-    newQuestions[questionIndex].correctOptionIndex = Math.min(corr, opts.length - 1);
+    newQuestions[questionIndex].correctOptionIndex = Math.max(0, Math.min(corr, opts.length - 1));
     setQuestions(newQuestions);
   };
 
@@ -80,20 +94,28 @@ export default function NuevaPreguntaPage() {
       }
     }
 
-    for (const q of questions) {
-      if (!q.questionText.trim()) {
-        setLoading(false);
-        return Swal.fire({ icon: 'error', title: 'Error', text: 'El texto de una pregunta no puede estar vacío.' });
-      }
-      if (q.options.some(opt => !opt.trim())) {
-        setLoading(false);
-        return Swal.fire({ icon: 'error', title: 'Error', text: 'Todas las opciones deben tener texto.' });
-      }
-      const idx = q.correctOptionIndex;
-      if (idx < 0 || idx >= q.options.length) {
-        setLoading(false);
-        return Swal.fire({ icon: 'error', title: 'Error', text: 'Selecciona una opción correcta válida.' });
-      }
+    // Validación de preguntas actualizada
+    for (let i = 0; i < questions.length; i++) {
+        const q = questions[i];
+        if (!q.questionText.trim()) {
+            setLoading(false);
+            return Swal.fire({ icon: 'error', title: 'Error', text: `El texto de la pregunta ${i + 1} no puede estar vacío.` });
+        }
+        if (q.type === 'multiple-choice') {
+            if (q.options.some(opt => !opt.trim())) {
+                setLoading(false);
+                return Swal.fire({ icon: 'error', title: 'Error', text: `Todas las opciones de la pregunta ${i + 1} deben tener texto.` });
+            }
+            if (q.correctOptionIndex < 0 || q.correctOptionIndex >= q.options.length) {
+                setLoading(false);
+                return Swal.fire({ icon: 'error', title: 'Error', text: `Selecciona una opción correcta válida para la pregunta ${i + 1}.` });
+            }
+        } else if (q.type === 'open-ended') {
+            if (!q.correctAnswer || !q.correctAnswer.trim()) {
+                setLoading(false);
+                return Swal.fire({ icon: 'error', title: 'Error', text: `La respuesta correcta para la pregunta de desarrollo #${i + 1} no puede estar vacía.` });
+            }
+        }
     }
 
     try {
@@ -102,6 +124,7 @@ export default function NuevaPreguntaPage() {
         description,
         status: examStatus,
         scheduledAt: scheduleTimestamp,
+        timer: timer > 0 ? timer : null, // Guarda el temporizador, o null si es 0
         questions,
         creatorUid: auth.currentUser.uid,
         createdAt: serverTimestamp(),
@@ -162,6 +185,29 @@ export default function NuevaPreguntaPage() {
               value={description}
               onChange={(e) => setDescription(e.target.value)}
             />
+          </div>
+
+          {/* Input para el Temporizador */}
+          <div>
+            <label className={`block font-semibold mb-1 ${
+              isDark ? 'text-gray-200' : 'text-gray-700'
+            }`}>
+              Tiempo del Examen (minutos):
+            </label>
+            <input
+              type="number"
+              className={`w-full px-4 py-2 border rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                isDark 
+                  ? 'bg-gray-800 border-gray-600 text-white' 
+                  : 'bg-white border-gray-300 text-gray-900'
+              }`}
+              min="0"
+              value={timer}
+              onChange={(e) => setTimer(parseInt(e.target.value, 10) || 0)}
+            />
+             <p className={`text-sm mt-1 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                Dejar en 0 para tiempo ilimitado.
+            </p>
           </div>
 
           <div>
@@ -236,6 +282,24 @@ export default function NuevaPreguntaPage() {
                 }`}>
                   Pregunta {qIndex + 1}
                 </h3>
+
+                {/* Selector de Tipo de Pregunta */}
+                <div className="mb-4">
+                    <label className={`block mb-1 font-medium ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
+                        Tipo de Pregunta:
+                    </label>
+                    <select
+                        className={`w-full px-4 py-2 border rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                            isDark ? 'bg-gray-900 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
+                        }`}
+                        value={q.type || 'multiple-choice'}
+                        onChange={(e) => handleQuestionChange(qIndex, 'type', e.target.value)}
+                    >
+                        <option value="multiple-choice">Opción Múltiple</option>
+                        <option value="open-ended">Desarrollo (Respuesta Abierta)</option>
+                    </select>
+                </div>
+
                 <div className="mb-4">
                   <label className={`block mb-1 ${
                     isDark ? 'text-gray-200' : 'text-gray-700'
@@ -254,68 +318,87 @@ export default function NuevaPreguntaPage() {
                     required
                   />
                 </div>
-
-                {q.options.map((option, oIndex) => (
-                  <div key={oIndex} className="flex items-center gap-2 mb-2">
-                    <label className={`w-24 ${
-                      isDark ? 'text-gray-200' : 'text-gray-700'
-                    }`}>
-                      Opción {String.fromCharCode(97 + oIndex)}):
-                    </label>
-                    <input
-                      type="text"
-                      className={`flex-1 px-3 py-2 border rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                        isDark 
-                          ? 'bg-gray-900 border-gray-600 text-white placeholder-gray-400' 
-                          : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
-                      }`}
-                      value={option}
-                      onChange={(e) => handleQuestionChange(qIndex, 'option', [oIndex, e.target.value])}
-                      required
-                    />
-                    <input
-                      type="radio"
-                      className={`w-4 h-4 transition-colors duration-200 focus:ring-2 focus:ring-blue-500 ${
-                        isDark 
-                          ? 'bg-gray-800 border-gray-600 text-blue-600' 
-                          : 'bg-white border-gray-300 text-blue-600'
-                      }`}
-                      name={`correctOption-${qIndex}`}
-                      checked={q.correctOptionIndex === oIndex}
-                      onChange={() => handleQuestionChange(qIndex, 'correctOptionIndex', oIndex)}
-                    />
-                    <span className={`text-sm ${
-                      isDark ? 'text-gray-300' : 'text-gray-600'
-                    }`}>
-                      Correcta
-                    </span>
-                    {q.options.length > 1 && (
-                      <button
-                        type="button"
-                        onClick={() => removeOption(qIndex, oIndex)}
-                        className={`text-sm transition-colors duration-200 hover:underline ${
-                          isDark 
-                            ? 'text-red-400 hover:text-red-300' 
-                            : 'text-red-500 hover:text-red-600'
-                        }`}
-                      >
-                        Eliminar
-                      </button>
-                    )}
-                  </div>
-                ))}
-
-                <button
-                  type="button"
-                  onClick={() => addOption(qIndex)}
-                  className={`mt-2 text-sm transition-colors duration-200 hover:underline ${
-                    isDark 
-                      ? 'text-blue-400 hover:text-blue-300' 
-                      : 'text-blue-600 hover:text-blue-700'
-                  }`}
-                >
-                  Añadir Opción
-                </button>
+                
+                {/* Renderizado condicional basado en el tipo de pregunta */}
+                {q.type === 'open-ended' ? (
+                    <div>
+                        <label className={`block mb-1 ${isDark ? 'text-gray-200' : 'text-gray-700'}`}>
+                            Respuesta Correcta (para revisión):
+                        </label>
+                        <textarea
+                            className={`w-full px-4 py-2 border rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                                isDark ? 'bg-gray-900 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900'
+                            }`}
+                            value={q.correctAnswer}
+                            onChange={(e) => handleQuestionChange(qIndex, 'correctAnswer', e.target.value)}
+                            required
+                            rows="3"
+                        ></textarea>
+                    </div>
+                ) : (
+                    <>
+                        {q.options.map((option, oIndex) => (
+                          <div key={oIndex} className="flex items-center gap-2 mb-2">
+                            <label className={`w-24 ${
+                              isDark ? 'text-gray-200' : 'text-gray-700'
+                            }`}>
+                              Opción {String.fromCharCode(97 + oIndex)}):
+                            </label>
+                            <input
+                              type="text"
+                              className={`flex-1 px-3 py-2 border rounded-md transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                                isDark 
+                                  ? 'bg-gray-900 border-gray-600 text-white placeholder-gray-400' 
+                                  : 'bg-white border-gray-300 text-gray-900 placeholder-gray-500'
+                              }`}
+                              value={option}
+                              onChange={(e) => handleQuestionChange(qIndex, 'option', [oIndex, e.target.value])}
+                              required
+                            />
+                            <input
+                              type="radio"
+                              className={`w-4 h-4 transition-colors duration-200 focus:ring-2 focus:ring-blue-500 ${
+                                isDark 
+                                  ? 'bg-gray-800 border-gray-600 text-blue-600' 
+                                  : 'bg-white border-gray-300 text-blue-600'
+                              }`}
+                              name={`correctOption-${qIndex}`}
+                              checked={q.correctOptionIndex === oIndex}
+                              onChange={() => handleQuestionChange(qIndex, 'correctOptionIndex', oIndex)}
+                            />
+                            <span className={`text-sm ${
+                              isDark ? 'text-gray-300' : 'text-gray-600'
+                            }`}>
+                              Correcta
+                            </span>
+                            {q.options.length > 1 && (
+                              <button
+                                type="button"
+                                onClick={() => removeOption(qIndex, oIndex)}
+                                className={`text-sm transition-colors duration-200 hover:underline ${
+                                  isDark 
+                                    ? 'text-red-400 hover:text-red-300' 
+                                    : 'text-red-500 hover:text-red-600'
+                                }`}
+                              >
+                                Eliminar
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                        <button
+                          type="button"
+                          onClick={() => addOption(qIndex)}
+                          className={`mt-2 text-sm transition-colors duration-200 hover:underline ${
+                            isDark 
+                              ? 'text-blue-400 hover:text-blue-300' 
+                              : 'text-blue-600 hover:text-blue-700'
+                          }`}
+                        >
+                          Añadir Opción
+                        </button>
+                    </>
+                )}
               </div>
             ))}
           </div>
