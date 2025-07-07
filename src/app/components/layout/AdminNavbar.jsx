@@ -86,10 +86,12 @@ export default function AdminNavbar({ children }) {
   // Items de navegación del sidebar
   const navItems = [
     { href: '/admin', label: 'Inicio', icon: <Home className="w-5 h-5" /> },
-    { href: '/admin/courses', label: 'Cursos', icon: <BookOpen className="w-5 h-5" /> },
+    { href: '/admin/courses', label: 'Cursos Premiun', icon: <BookOpen className="w-5 h-5" /> },
     { href: '/admin/bank-preguntas', label: 'Exámenes', icon: <FileText className="w-5 h-5" /> },
     { href: '/admin/users', label: 'Usuarios', icon: <Users className="w-5 h-5" /> },
-    { href: '/admin/solicitudes', label: 'Solicitudes', icon: <Wallet className="w-5 h-5" /> },
+    { href: '/admin/solicitudes', label: 'Solicitudes Cursos Premiun', icon: <Wallet className="w-5 h-5" /> },
+    { href: '/admin/courses', label: 'Cursos Pago Unico', icon: <BookOpen className="w-5 h-5" /> },
+    { href: '/admin/solicitudes', label: 'Solicitudes Cursos Pago Unico', icon: <Wallet className="w-5 h-5" /> },
     { href: '/admin/live-classes', label: 'Clases en Vivo', icon: <Video className="w-5 h-5" /> },
     { href: '/admin/qr-gestion', label: 'QR', icon: <QrCode className="w-5 h-5" /> },
   ];
