@@ -153,7 +153,7 @@ export default function CourseForm({ course, courseId }) {
                     <div className="sm:col-span-3">
                         <label htmlFor="category" className={labelClasses}>Categoría (Opcional)</label>
                         <div className="mt-2">
-                            <select id="category" value={categoryId} onChange={(e) => setCategoryId(e.target.value)} className={`${inputBaseClasses} ${inputThemeClasses}`}>
+                            <select id="category" value={categoryId || ''} onChange={(e) => setCategoryId(e.target.value)} className={`${inputBaseClasses} ${inputThemeClasses}`}>
                                 <option value="">-- Sin categoría --</option>
                                 {categories.map((cat) => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
                             </select>

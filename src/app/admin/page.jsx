@@ -1,216 +1,154 @@
-//src/app/admin/page.jsx
 'use client';
+
+import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
+import useSWR from 'swr';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
+import { fetcher } from '@/lib/fetcher';
+import {
+    Home, FileText, Users, Wallet, Video, QrCode, Star, 
+    ShoppingBag, Tags, KeyRound, Gem, BookKey, Clock, Sun, 
+    Cloud, CloudSun, Cloudy, CloudRain, CloudSnow, CloudLightning, Loader, MapPin
+} from 'lucide-react';
+
+// --- Componente para Tarjeta de Estadística ---
+function StatCard({ title, value, icon, isLoading, colorClass }) {
+    const { isDark } = useTheme();
+    return (
+        <div className={`p-4 rounded-lg border ${isDark ? 'bg-gray-800/70 border-gray-700' : 'bg-gray-50 border-gray-200'}`}>
+            <div className="flex items-center gap-4">
+                <div className={`p-2 rounded-lg ${colorClass}`}>
+                    {icon}
+                </div>
+                <div>
+                    <div className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                        {isLoading ? <div className="h-8 w-12 bg-gray-300 dark:bg-gray-600 rounded-md animate-pulse"></div> : value}
+                    </div>
+                    <div className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                        {title}
+                    </div>
+                </div>
+            </div>
+        </div>
+    );
+}
 
 export default function AdminHomePage() {
-  const { user } = useAuth();
-  const { isDark, isLoaded } = useTheme();
+    const { user } = useAuth();
+    const { isDark, isLoaded } = useTheme();
+    const [currentTime, setCurrentTime] = useState('');
 
-  if (!isLoaded) {
-    return (
-      <section className="min-h-screen flex items-center justify-center">
-        <div 
-          className="p-8 rounded-lg shadow-lg"
-          style={{ 
-            backgroundColor: isDark ? '#1f2937' : '#ffffff',
-            color: isDark ? '#f9fafb' : '#111827'
-          }}
-        >
-          <p className="text-lg animate-pulse">
-            Cargando...
-          </p>
-        </div>
-      </section>
-    );
-  }
+    const { data: usersData, isLoading: usersLoading } = useSWR('/api/users', fetcher);
+    const weatherUrl = 'https://api.open-meteo.com/v1/forecast?latitude=-21.53&longitude=-64.72&current=temperature_2m,weather_code';
+    const { data: weatherData, isLoading: weatherLoading } = useSWR(weatherUrl, fetcher);
 
-  const cardItems = [
-    { 
-      href: '/admin', 
-      title: 'Página Principal', 
-      desc: 'Accede a la página principal del administrador',
-      icon: '🏠'
-    },
-    { 
-      href: '/admin/courses', 
-      title: 'Cursos', 
-      desc: 'Gestiona y administra los cursos disponibles',
-      icon: '📚'
-    },
-    { 
-      href: '/admin/users', 
-      title: 'Usuarios', 
-      desc: 'Administra los usuarios registrados',
-      icon: '👥'
-    },
-    { 
-      href: '/admin/bank-preguntas', 
-      title: 'Exámenes', 
-      desc: 'Gestiona el banco de preguntas y exámenes',
-      icon: '📝'
-    },
-    { 
-      href: '/admin/solicitudes', 
-      title: 'Solicitudes', 
-      desc: 'Revisa y gestiona las solicitudes pendientes',
-      icon: '💼'
-    },
-    { 
-      href: '/admin/live-classes', 
-      title: 'Clases en Vivo', 
-      desc: 'Administra las clases en tiempo real',
-      icon: '🎥'
+    useEffect(() => {
+        const timer = setInterval(() => {
+            setCurrentTime(new Date().toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
+        }, 1000);
+        return () => clearInterval(timer);
+    }, []);
+
+    const stats = useMemo(() => ({
+        total: usersData?.length || 0,
+        premium: usersData?.filter(u => u.isPremium === true).length || 0,
+        pagoUnico: usersData?.filter(u => u.hasPagoUnicoAccess === true).length || 0,
+    }), [usersData]);
+
+    const getWeatherDetails = (code) => {
+        if (code === 0) return { icon: <Sun size={20}/>, description: "Despejado" };
+        if (code === 1) return { icon: <CloudSun size={20}/>, description: "Principalmente despejado" };
+        if (code === 2) return { icon: <Cloud size={20}/>, description: "Parcialmente nublado" };
+        if (code === 3) return { icon: <Cloudy size={20}/>, description: "Nublado" };
+        if (code >= 51 && code <= 67) return { icon: <CloudRain size={20}/>, description: "Lluvia" };
+        if (code >= 71 && code <= 77) return { icon: <CloudSnow size={20}/>, description: "Nieve" };
+        if (code >= 95 && code <= 99) return { icon: <CloudLightning size={20}/>, description: "Tormenta" };
+        return { icon: <Cloudy size={20}/>, description: "Brumoso" };
+    };
+    
+    const weatherDetails = weatherData ? getWeatherDetails(weatherData.current.weather_code) : null;
+
+    const cardItems = [
+        { href: '/admin/users', title: 'Usuarios', desc: 'Administra los usuarios registrados', icon: <Users/> },
+        { href: '/admin/courses', title: 'Cursos Premium', desc: 'Gestiona el catálogo de suscripción', icon: <Star/> },
+        { href: '/admin/Cursos_Pago_Unico', title: 'Cursos Pago Único', desc: 'Gestiona los cursos de acceso permanente', icon: <ShoppingBag/> },
+        { href: '/admin/Cursos_Pago_Unico/categoria', title: 'Categorías', desc: 'Organiza los cursos en categorías', icon: <Tags/> },
+        { href: '/admin/bank-preguntas', title: 'Exámenes', desc: 'Gestiona el banco de preguntas y exámenes', icon: <FileText/> },
+        { href: '/admin/solicitudes', title: 'Solicitudes Premium', desc: 'Revisa y aprueba las suscripciones', icon: <Wallet/> },
+        { href: '/admin/solicitudes-pago-unico', title: 'Solicitudes de Acceso', desc: 'Aprueba el acceso a cursos de pago único', icon: <KeyRound/> },
+        { href: '/admin/live-classes', title: 'Clases en Vivo', desc: 'Administra las clases en tiempo real', icon: <Video/> },
+        { href: '/admin/qr-gestion', title: 'Gestión de QR', desc: 'Administra los códigos QR para pagos', icon: <QrCode/> },
+    ];
+
+    if (!isLoaded) {
+        return (
+            <section className="min-h-screen flex items-center justify-center" style={{ backgroundColor: isDark ? '#111827' : '#f9fafb' }}>
+                <p className={`text-lg animate-pulse ${isDark ? 'text-white' : 'text-black'}`}>Cargando...</p>
+            </section>
+        );
     }
-  ];
 
-  return (
-    <section className="px-4 py-6 md:px-6 min-h-screen transition-all duration-300">
-      {/* Header Section */}
-      <div 
-        className="mb-8 p-6 rounded-xl shadow-sm border transition-all duration-300"
-        style={{
-          backgroundColor: isDark ? '#1f2937' : '#ffffff',
-          borderColor: isDark ? '#374151' : '#e5e7eb'
-        }}
-      >
-        <h1 
-          className="text-3xl md:text-4xl font-bold mb-3"
-          style={{ color: isDark ? '#f9fafb' : '#111827' }}
-        >
-          Panel de Administración
-        </h1>
-        <p 
-          className="text-lg"
-          style={{ color: isDark ? '#d1d5db' : '#6b7280' }}
-        >
-          Bienvenido, <span className="font-semibold">{user?.email}</span>
-        </p>
-      </div>
+    return (
+        <section className="px-4 py-6 md:px-6 min-h-screen transition-all duration-300" style={{ backgroundColor: isDark ? '#111827' : '#f3f4f6' }}>
+            <div className={`mb-8 p-6 rounded-xl shadow-sm border transition-all duration-300 ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+                <div className="flex flex-col sm:flex-row justify-between items-start gap-4">
+                    <div>
+                        <h1 className={`text-3xl md:text-4xl font-bold mb-1 ${isDark ? 'text-white' : 'text-gray-900'}`}>Panel de Administración</h1>
+                        <p className={`text-lg ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                            Bienvenido, <span className="font-semibold">{user?.displayName || user?.email}</span>
+                        </p>
+                    </div>
+                    <div className={`flex items-center flex-wrap justify-end gap-x-6 gap-y-2 p-3 rounded-lg border ${isDark ? 'bg-gray-900/50 border-gray-700' : 'bg-gray-100 border-gray-200'}`}>
+                        <div className="flex items-center gap-2" title={new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}>
+                            <span className={`font-semibold text-md ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                                {new Date().toLocaleDateString('es-ES', { weekday: 'long', day: 'numeric', month: 'long' })}
+                            </span>
+                        </div>
+                         <div className={`w-px h-6 self-stretch ${isDark ? 'bg-gray-600' : 'bg-gray-300'} hidden sm:block`}></div>
+                        <div className="flex items-center gap-2">
+                            <Clock className={isDark ? 'text-blue-400' : 'text-blue-600'} size={20}/>
+                            <span className={`font-semibold text-md ${isDark ? 'text-white' : 'text-gray-800'}`}>{currentTime}</span>
+                        </div>
+                        <div className={`w-px h-6 self-stretch ${isDark ? 'bg-gray-600' : 'bg-gray-300'} hidden sm:block`}></div>
+                        {weatherLoading ? <Loader className="animate-spin" size={20}/> : weatherDetails && (
+                            <div className="flex items-center gap-2" title={weatherDetails.description}>
+                                <span className={isDark ? 'text-yellow-400' : 'text-yellow-500'}>{weatherDetails.icon}</span>
+                                <span className={`font-semibold text-md ${isDark ? 'text-white' : 'text-gray-800'}`}>{Math.round(weatherData.current.temperature_2m)}°C</span>
+                                <span className={`text-sm ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>(Tarija, BO)</span>
+                            </div>
+                        )}
+                    </div>
+                </div>
+            </div>
 
-      {/* Cards Grid */}
-      <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
-        {cardItems.map(({ href, title, desc, icon }) => (
-          <Link
-            key={href}
-            href={href}
-            className="group block transform transition-all duration-200 hover:scale-105"
-          >
-            <div
-              className="p-6 rounded-xl shadow-lg border transition-all duration-300 hover:shadow-xl"
-              style={{
-                backgroundColor: isDark ? '#1f2937' : '#ffffff',
-                borderColor: isDark ? '#374151' : '#e5e7eb'
-              }}
-            >
-              <div className="flex items-center mb-4">
-                <span className="text-3xl mr-3">{icon}</span>
-                <h2 
-                  className="text-xl font-semibold group-hover:underline"
-                  style={{ color: isDark ? '#f9fafb' : '#111827' }}
-                >
-                  {title}
-                </h2>
-              </div>
-              <p 
-                className="text-sm leading-relaxed"
-                style={{ color: isDark ? '#d1d5db' : '#6b7280' }}
-              >
-                {desc}
-              </p>
-              
-              {/* Hover indicator */}
-              <div 
-                className="mt-4 text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                style={{ color: isDark ? '#60a5fa' : '#3b82f6' }}
-              >
-                Acceder →
-              </div>
+            <div className="mb-10">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <StatCard title="Total de Usuarios" value={stats.total} icon={<Users size={24} className="text-blue-500"/>} isLoading={usersLoading} colorClass={isDark ? 'bg-blue-900/40' : 'bg-blue-100'}/>
+                    <StatCard title="Usuarios Premium" value={stats.premium} icon={<Gem size={24} className="text-amber-500"/>} isLoading={usersLoading} colorClass={isDark ? 'bg-amber-900/40' : 'bg-amber-100'}/>
+                    <StatCard title="Acceso Pago Único" value={stats.pagoUnico} icon={<BookKey size={24} className="text-green-500"/>} isLoading={usersLoading} colorClass={isDark ? 'bg-green-900/40' : 'bg-green-100'}/>
+                </div>
             </div>
-          </Link>
-        ))}
-      </div>
 
-      {/* Statistics Section */}
-      <div 
-        className="mt-12 p-6 rounded-xl shadow-sm border transition-all duration-300"
-        style={{
-          backgroundColor: isDark ? '#1f2937' : '#ffffff',
-          borderColor: isDark ? '#374151' : '#e5e7eb'
-        }}
-      >
-        <h3 
-          className="text-2xl font-semibold mb-4"
-          style={{ color: isDark ? '#f9fafb' : '#111827' }}
-        >
-          Estado del Sistema
-        </h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div 
-            className="p-4 rounded-lg border"
-            style={{
-              backgroundColor: isDark ? '#374151' : '#f9fafb',
-              borderColor: isDark ? '#4b5563' : '#e5e7eb'
-            }}
-          >
-            <div 
-              className="text-2xl font-bold"
-              style={{ color: isDark ? '#10b981' : '#059669' }}
-            >
-              Online
+            <div>
+                <h2 className={`text-2xl font-bold mb-6 ${isDark ? 'text-white' : 'text-gray-900'}`}>Herramientas de Gestión</h2>
+                <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+                    {cardItems.map(({ href, title, desc, icon }) => (
+                        <Link key={href} href={href} className="group block transform transition-all duration-300 hover:scale-105">
+                            <div className={`p-6 rounded-xl shadow-lg border h-full flex flex-col transition-all duration-300 hover:shadow-xl ${isDark ? 'bg-gray-800 border-gray-700 hover:border-blue-500/50' : 'bg-white border-gray-200 hover:border-blue-500'}`}>
+                                <div className="flex items-center mb-3">
+                                    <span className={`text-2xl mr-4 ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>{icon}</span>
+                                    <h2 className={`text-xl font-semibold group-hover:text-blue-600 dark:group-hover:text-blue-400 ${isDark ? 'text-white' : 'text-gray-900'}`}>{title}</h2>
+                                </div>
+                                <p className={`text-sm leading-relaxed flex-grow ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{desc}</p>
+                                <div className="mt-4 text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300 text-blue-600 dark:text-blue-400">
+                                    Acceder →
+                                </div>
+                            </div>
+                        </Link>
+                    ))}
+                </div>
             </div>
-            <div 
-              className="text-sm"
-              style={{ color: isDark ? '#d1d5db' : '#6b7280' }}
-            >
-              Sistema funcionando
-            </div>
-          </div>
-          
-          <div 
-            className="p-4 rounded-lg border"
-            style={{
-              backgroundColor: isDark ? '#374151' : '#f9fafb',
-              borderColor: isDark ? '#4b5563' : '#e5e7eb'
-            }}
-          >
-            <div 
-              className="text-2xl font-bold"
-              style={{ color: isDark ? '#f59e0b' : '#d97706' }}
-            >
-              {new Date().toLocaleDateString()}
-            </div>
-            <div 
-              className="text-sm"
-              style={{ color: isDark ? '#d1d5db' : '#6b7280' }}
-            >
-              Fecha actual
-            </div>
-          </div>
-          
-          <div 
-            className="p-4 rounded-lg border"
-            style={{
-              backgroundColor: isDark ? '#374151' : '#f9fafb',
-              borderColor: isDark ? '#4b5563' : '#e5e7eb'
-            }}
-          >
-            <div 
-              className="text-2xl font-bold"
-              style={{ color: isDark ? '#8b5cf6' : '#7c3aed' }}
-            >
-              Admin
-            </div>
-            <div 
-              className="text-sm"
-              style={{ color: isDark ? '#d1d5db' : '#6b7280' }}
-            >
-              Rol actual
-            </div>
-          </div>
-        </div>
-      </div>
-    </section>
-  );
+        </section>
+    );
 }

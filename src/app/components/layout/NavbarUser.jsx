@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
-// Importamos los iconos de Lucide React para un look moderno y consistente
+// --- ✅ MEJORA: Se importa el icono ChevronDown para el desplegable ---
 import {
   Home,
   Star,
@@ -18,7 +18,9 @@ import {
   X,
   Sun,
   Moon,
-  BookmarkCheck
+  BookmarkCheck,
+  ChevronDown,
+  BookMarked
 } from 'lucide-react';
 
 export default function NavbarUser({ children }) {
@@ -27,22 +29,29 @@ export default function NavbarUser({ children }) {
   const pathname = usePathname();
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  // --- ✅ MEJORA: Estado para controlar el menú desplegable ---
+  const [openDropdown, setOpenDropdown] = useState(null);
 
-  // --- ESTRUCTURA DE NAVEGACIÓN LÓGICA Y CONDICIONAL ---
+  // --- ✅ MEJORA: Estructura de navegación con sub-menús ---
   const navItems = useMemo(() => [
     { href: '/app', label: 'Inicio', Icon: Home },
-    { type: 'separator', label: 'Mis Cursos' },
-    { href: '/app/courses', label: 'Cursos Premium', Icon: Star },
-    // El siguiente enlace es para los cursos que el usuario ya ha pagado (del modelo premium)
-    { href: '/app/courses/cursosPagados', label: 'Mis Cursos Premium', Icon: BookmarkCheck },
-    // Este enlace solo aparece si el admin ha concedido el permiso `hasPagoUnicoAccess` al usuario.
-    { href: '/app/coursesPagoUnico', label: 'Mis Cursos Pago Unico', Icon: BookmarkCheck },
+    { type: 'separator', label: 'Contenido' },
+    {
+      type: 'dropdown',
+      label: 'Cursos Premium',
+      Icon: Star,
+      subItems: [
+        { href: '/app/courses', label: 'Catálogo Premium', Icon: ShoppingBag },
+        { href: '/app/courses/cursosPagados', label: 'Mis Cursos Adquiridos', Icon: BookmarkCheck },
+      ]
+    },
+    user?.hasPagoUnicoAccess && { href: '/app/coursesPagoUnico', label: 'Cursos Pago Único', Icon: BookMarked },
     { type: 'separator', label: 'Herramientas' },
     { href: '/app/examen-test', label: 'Exámenes', Icon: FileText },
     { href: '/app/clases-en-vivo', label: 'Clases en Vivo', Icon: Video },
     { type: 'separator', label: 'Cuenta' },
     { href: '/app/profile', label: 'Mi Perfil', Icon: UserCircle },
-  ].filter(Boolean), [user]); // .filter(Boolean) elimina los elementos falsos (como el enlace condicional si el permiso no existe)
+  ].filter(Boolean), [user]);
 
   useEffect(() => {
     const checkMobile = () => {
@@ -54,8 +63,23 @@ export default function NavbarUser({ children }) {
     window.addEventListener('resize', checkMobile);
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
+  
+  // Efecto para abrir el dropdown si una de sus rutas secundarias está activa
+  useEffect(() => {
+     const activeDropdown = navItems.find(item => 
+        item.type === 'dropdown' && item.subItems.some(sub => pathname.startsWith(sub.href))
+     );
+     if (activeDropdown) {
+        setOpenDropdown(activeDropdown.label);
+     }
+  }, [pathname, navItems]);
+
 
   const toggleSidebar = () => setIsSidebarOpen(o => !o);
+  
+  const handleDropdownClick = (label) => {
+    setOpenDropdown(openDropdown === label ? null : label);
+  };
 
   const headerBg = isDark ? 'bg-gray-800 text-gray-100 border-gray-700' : 'bg-white text-gray-900 border-gray-200';
   const sidebarBg = isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200';
@@ -115,6 +139,39 @@ export default function NavbarUser({ children }) {
                   </li>
                 );
               }
+              
+              // --- ✅ MEJORA: Lógica para renderizar el menú desplegable ---
+              if (item.type === 'dropdown') {
+                const isOpen = openDropdown === item.label;
+                const isParentActive = item.subItems.some(sub => pathname.startsWith(sub.href));
+                return (
+                  <li key={item.label}>
+                    <button onClick={() => handleDropdownClick(item.label)} className={`w-full flex items-center justify-between gap-4 px-2 py-2.5 rounded-lg transition-colors duration-200 ${isParentActive && !isOpen ? (isDark ? 'bg-indigo-900/20 text-indigo-400' : 'bg-indigo-100/50 text-indigo-700') : ''} ${isDark ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-700'}`}>
+                      <div className="flex items-center gap-4">
+                        <item.Icon className="w-5 h-5 flex-shrink-0" />
+                        <span className="truncate font-medium">{item.label}</span>
+                      </div>
+                      <ChevronDown className={`w-5 h-5 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`} />
+                    </button>
+                    {isOpen && (
+                      <ul className="pl-6 pt-1 space-y-1">
+                        {item.subItems.map(subItem => {
+                          const active = pathname.startsWith(subItem.href);
+                          return (
+                            <li key={subItem.href}>
+                              <Link href={subItem.href} className={`flex items-center gap-4 px-2 py-2 rounded-lg transition-colors duration-200 text-sm ${active ? (isDark ? 'bg-indigo-900/40 text-indigo-300' : 'bg-indigo-100 text-indigo-600') : (isDark ? 'hover:bg-gray-700/50 text-gray-300' : 'hover:bg-gray-100/80 text-gray-700')}`}>
+                                <subItem.Icon className="w-4 h-4 flex-shrink-0" />
+                                <span className="truncate font-medium">{subItem.label}</span>
+                              </Link>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                    )}
+                  </li>
+                );
+              }
+
               const active = pathname === item.href || (item.href !== '/app' && pathname.startsWith(item.href));
               return (
                 <li key={`${item.href}-${item.label}`}>

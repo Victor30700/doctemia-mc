@@ -1,16 +1,19 @@
 'use client';
 import React, { useState, useEffect, useMemo } from 'react';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, query, where, doc, getDoc, onSnapshot } from 'firebase/firestore';
+// --- ✅ MEJORA: Se importa updateDoc, arrayUnion y arrayRemove ---
+import { collection, getDocs, query, where, doc, getDoc, onSnapshot, addDoc, serverTimestamp, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import Swal from 'sweetalert2';
-import { LockKeyhole, Send, Hourglass, BookOpen, ChevronDown, Video, ArrowLeft, FileText } from 'lucide-react';
+// --- ✅ MEJORA: Se importan nuevos iconos ---
+import { LockKeyhole, Send, Hourglass, BookOpen, Search, CheckCircle2, Bookmark } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
 const NOMBRE_NEGOCIO = 'DOCTEMIA MC';
 
-// --- Componente para la pantalla de "Acceso Denegado" ---
+// El componente AccessDeniedScreen no necesita cambios
 const AccessDeniedScreen = ({ user, isDark, swalTheme }) => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [requestSent, setRequestSent] = useState(false);
@@ -60,14 +63,10 @@ const AccessDeniedScreen = ({ user, isDark, swalTheme }) => {
             confirmButtonText: 'Enviar Solicitud',
             cancelButtonText: 'Cancelar',
             ...swalTheme,
-            customClass: {
-                popup: isDark ? 'bg-gray-800' : 'bg-white',
-            },
+            customClass: { popup: isDark ? 'bg-gray-800' : 'bg-white' },
             preConfirm: () => {
                 const phone = Swal.getPopup().querySelector('#swal-input-phone').value;
-                if (!phone) {
-                    Swal.showValidationMessage(`Por favor, ingresa tu número de WhatsApp`);
-                }
+                if (!phone) { Swal.showValidationMessage(`Por favor, ingresa tu número de WhatsApp`); }
                 return { phone };
             }
         }).then(async (result) => {
@@ -103,64 +102,19 @@ const AccessDeniedScreen = ({ user, isDark, swalTheme }) => {
     );
 };
 
-// --- Componente para mostrar el contenido de un curso específico ---
-const CourseContentView = ({ course, onBack, isDark }) => {
-    const [openModule, setOpenModule] = useState(0);
-
-    return (
-        <div className="max-w-5xl mx-auto">
-            <button onClick={onBack} className={`inline-flex items-center gap-2 mb-8 text-sm font-semibold transition-colors ${isDark ? 'text-indigo-400 hover:text-indigo-300' : 'text-indigo-600 hover:text-indigo-800'}`}>
-                <ArrowLeft size={18} /> Volver al Catálogo
-            </button>
-            <div className={`p-6 sm:p-8 rounded-2xl shadow-xl border ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
-                <h1 className={`text-3xl sm:text-4xl font-bold mb-3 ${isDark ? 'text-white' : 'text-gray-900'}`}>{course.title}</h1>
-                <p className={`mb-6 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{course.description}</p>
-                {course.summaryDriveLink && (
-                    <a href={course.summaryDriveLink} target="_blank" rel="noopener noreferrer" className={`inline-flex items-center gap-2 mb-8 text-sm font-semibold rounded-full px-4 py-2 transition ${isDark ? 'bg-blue-500/20 text-blue-300 hover:bg-blue-500/30' : 'bg-blue-100 text-blue-700 hover:bg-blue-200'}`}>
-                        <FileText size={16} /> Ver Resumen del Curso
-                    </a>
-                )}
-                
-                <h2 className={`text-2xl font-semibold mb-4 border-b pb-2 ${isDark ? 'text-indigo-400 border-gray-700' : 'text-indigo-600 border-gray-300'}`}>Contenido del Curso</h2>
-                <div className="space-y-4">
-                    {course.modules?.map((module, index) => (
-                        <div key={index} className={`rounded-lg border ${isDark ? 'border-gray-700' : 'border-gray-200'} overflow-hidden`}>
-                            <button onClick={() => setOpenModule(openModule === index ? -1 : index)} className={`w-full flex justify-between items-center p-4 text-left font-semibold text-lg ${isDark ? 'bg-gray-700/50 hover:bg-gray-700' : 'bg-gray-50 hover:bg-gray-100'}`}>
-                                <span>{module.title}</span>
-                                <ChevronDown className={`transition-transform ${openModule === index ? 'rotate-180' : ''}`} />
-                            </button>
-                            {openModule === index && (
-                                <ul className={`p-4 space-y-3 ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
-                                    {module.videos?.map((video, vIndex) => (
-                                        <li key={vIndex} className={`flex items-center justify-between p-3 rounded-md ${isDark ? 'hover:bg-gray-700/50' : 'hover:bg-gray-100/50'}`}>
-                                            <span className="flex items-center gap-3">
-                                                <Video size={20} className="text-indigo-500" />
-                                                {video.title}
-                                            </span>
-                                            <a href={video.url} target="_blank" rel="noopener noreferrer" className={`text-sm font-bold text-indigo-500 hover:underline`}>
-                                                Ver Video
-                                            </a>
-                                        </li>
-                                    ))}
-                                </ul>
-                            )}
-                        </div>
-                    ))}
-                </div>
-            </div>
-        </div>
-    );
-};
-
-
 // --- Componente Principal de la Página ---
 export default function CoursesPagoUnicoPage() {
     const { user, loading: authLoading } = useAuth();
     const { isDark } = useTheme();
+    const router = useRouter(); 
     const [courses, setCourses] = useState([]);
     const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [selectedCourse, setSelectedCourse] = useState(null);
+
+    // --- ✅ MEJORA: Estados para el buscador y cursos completados ---
+    const [searchTerm, setSearchTerm] = useState('');
+    const [selectedCategory, setSelectedCategory] = useState('');
+    const [completedCourses, setCompletedCourses] = useState([]);
 
     const swalTheme = {
         background: isDark ? '#1f2937' : '#ffffff', color: isDark ? '#f9fafb' : '#111827',
@@ -168,50 +122,67 @@ export default function CoursesPagoUnicoPage() {
     };
 
     useEffect(() => {
-        if (!user || !user.hasPagoUnicoAccess) {
+        if (!user) {
+            setLoading(false);
+            return;
+        }
+        if (!user.hasPagoUnicoAccess) {
             setLoading(false);
             return;
         }
 
+        // Cargar Cursos
         const coursesQuery = query(collection(db, "Cursos_Pago_Unico"), where("isActive", "==", true));
         const coursesUnsubscribe = onSnapshot(coursesQuery, (snapshot) => {
             const allCourses = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
             setCourses(allCourses);
             setLoading(false);
-        }, (error) => {
-            console.error("Error fetching courses:", error);
-            setLoading(false);
         });
         
+        // Cargar Categorías
         const categoriesUnsubscribe = onSnapshot(collection(db, 'course_categories'), (snapshot) => {
-            setCategories(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
+            const cats = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+            cats.sort((a, b) => a.name.localeCompare(b.name));
+            setCategories(cats);
+        });
+
+        // --- ✅ MEJORA: Cargar y escuchar cursos completados del usuario ---
+        const userDocRef = doc(db, 'users', user.uid);
+        const userUnsubscribe = onSnapshot(userDocRef, (doc) => {
+            if (doc.exists()) {
+                setCompletedCourses(doc.data().pagoUnicoCursosCompletados || []);
+            }
         });
 
         return () => {
             coursesUnsubscribe();
             categoriesUnsubscribe();
+            userUnsubscribe();
         };
     }, [user]);
 
-    const groupedCourses = useMemo(() => {
-        if (courses.length === 0) return {};
+    // --- ✅ MEJORA: Lógica para filtrar cursos antes de agruparlos ---
+    const filteredCourses = useMemo(() => {
+        return courses.filter(course => {
+            const categoryMap = new Map(categories.map(cat => [cat.id, cat.name]));
+            const categoryName = categoryMap.get(course.categoryId) || '';
+            
+            const matchesSearchTerm = course.title.toLowerCase().includes(searchTerm.toLowerCase());
+            const matchesCategory = selectedCategory ? course.categoryId === selectedCategory : true;
+            
+            return matchesSearchTerm && matchesCategory;
+        });
+    }, [courses, searchTerm, selectedCategory, categories]);
 
+    const groupedCourses = useMemo(() => {
+        if (filteredCourses.length === 0) return {};
         const categoryMap = new Map(categories.map(cat => [cat.id, cat.name]));
         const groups = {};
-
-        courses.sort((a, b) => {
-            const dateA = a.createdAt || a.updatedAt;
-            const dateB = b.createdAt || b.updatedAt;
-            return (dateB?.seconds || 0) - (dateA?.seconds || 0);
-        });
+        const sortedCourses = [...filteredCourses].sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
         
-        courses.forEach(course => {
+        sortedCourses.forEach(course => {
             const date = (course.createdAt || course.updatedAt)?.toDate(); 
-            
-            const monthYearKey = date
-                ? date.toLocaleString('es-ES', { month: 'long', year: 'numeric' }).replace(/^\w/, c => c.toUpperCase())
-                : 'Otros';
-
+            const monthYearKey = date ? date.toLocaleString('es-ES', { month: 'long', year: 'numeric' }).replace(/^\w/, c => c.toUpperCase()) : 'Otros';
             const categoryName = categoryMap.get(course.categoryId) || 'Sin Categoría';
 
             if (!groups[monthYearKey]) groups[monthYearKey] = {};
@@ -219,61 +190,120 @@ export default function CoursesPagoUnicoPage() {
             groups[monthYearKey][categoryName].push(course);
         });
         return groups;
-    }, [courses, categories]);
+    }, [filteredCourses, categories]);
 
-    if (authLoading || loading) {
-        return <div className={`flex justify-center items-center h-screen ${isDark ? 'bg-gray-900' : 'bg-gray-50'}`}><p className={`animate-pulse ${isDark ? 'text-white' : 'text-black'}`}>Cargando Cursos...</p></div>;
-    }
-    if (!user) {
-        return <div className={`flex justify-center items-center h-screen ${isDark ? 'bg-gray-900' : 'bg-gray-50'}`}><p>Por favor, <Link href="/login" className="text-indigo-500 hover:underline">inicia sesión</Link> para continuar.</p></div>;
-    }
-    if (!user.hasPagoUnicoAccess) {
-        return <AccessDeniedScreen user={user} isDark={isDark} swalTheme={swalTheme} />;
-    }
+    // --- ✅ MEJORA: Función para marcar/desmarcar un curso como completado ---
+    const handleToggleComplete = async (courseId, isCompleted) => {
+        if (!user) return;
+        const userDocRef = doc(db, 'users', user.uid);
+        try {
+            await updateDoc(userDocRef, {
+                pagoUnicoCursosCompletados: isCompleted ? arrayRemove(courseId) : arrayUnion(courseId)
+            });
+            Swal.fire({
+                toast: true,
+                icon: 'success',
+                title: isCompleted ? 'Curso desmarcado' : '¡Curso completado!',
+                position: 'top-end',
+                showConfirmButton: false,
+                timer: 2000,
+                timerProgressBar: true,
+                ...swalTheme
+            });
+        } catch (error) {
+            console.error("Error updating completed status:", error);
+            Swal.fire({ title: 'Error', text: 'No se pudo actualizar el estado del curso.', icon: 'error', ...swalTheme });
+        }
+    };
+
+    if (authLoading || loading) return <div className={`flex justify-center items-center h-screen ${isDark ? 'bg-gray-900' : 'bg-gray-50'}`}><p className={`animate-pulse ${isDark ? 'text-white' : 'text-black'}`}>Cargando Cursos...</p></div>;
+    if (!user) return <div className={`flex justify-center items-center h-screen ${isDark ? 'bg-gray-900' : 'bg-gray-50'}`}><p>Por favor, <Link href="/login" className="text-indigo-500 hover:underline">inicia sesión</Link> para continuar.</p></div>;
+    if (!user.hasPagoUnicoAccess) return <AccessDeniedScreen user={user} isDark={isDark} swalTheme={swalTheme} />;
     
     return (
         <div className={`min-h-screen p-4 sm:p-6 lg:p-8 ${isDark ? 'bg-gray-900' : 'bg-gray-50'}`}>
-            {selectedCourse ? (
-                <CourseContentView course={selectedCourse} onBack={() => setSelectedCourse(null)} isDark={isDark} />
-            ) : (
-                <div className="max-w-7xl mx-auto">
-                    <h1 className={`text-4xl font-bold text-center mb-12 ${isDark ? 'text-white' : 'text-gray-900'}`}>Mis Cursos</h1>
-                    {Object.keys(groupedCourses).length > 0 ? (
-                        <div className="space-y-12">
-                            {Object.entries(groupedCourses).map(([monthYear, categoriesInMonth]) => (
-                                <div key={monthYear}>
-                                    <h2 className={`text-2xl font-bold mb-6 pb-2 border-b-2 ${isDark ? 'text-blue-400 border-blue-400/30' : 'text-blue-600 border-blue-600/30'}`}>{monthYear}</h2>
-                                    <div className="space-y-8">
-                                        {Object.entries(categoriesInMonth).map(([categoryName, coursesInCategory]) => (
-                                            <div key={categoryName}>
-                                                <h3 className={`text-xl font-semibold mb-4 ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{categoryName}</h3>
-                                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-                                                    {coursesInCategory.map(course => (
-                                                        <div key={course.id} className={`flex flex-col rounded-xl shadow-lg overflow-hidden transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 border ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
-                                                            <img src={course.imageUrl || '/placeholder.png'} alt={course.title} className="w-full h-48 object-cover" />
+            <div className="max-w-7xl mx-auto">
+                <h1 className={`text-4xl font-bold text-center mb-6 ${isDark ? 'text-white' : 'text-gray-900'}`}>Catálogo de Cursos</h1>
+                
+                {/* --- ✅ MEJORA: Barra de Búsqueda y Filtro --- */}
+                <div className={`p-4 rounded-lg mb-10 shadow-md ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div className="relative">
+                            <Search className={`absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 ${isDark ? 'text-gray-400' : 'text-gray-500'}`} />
+                            <input
+                                type="text"
+                                placeholder="Buscar por título..."
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                                className={`w-full pl-10 pr-4 py-2 border rounded-md focus:outline-none focus:ring-2 ${isDark ? 'bg-gray-700 border-gray-600 text-white focus:ring-indigo-500' : 'bg-white border-gray-300 focus:ring-indigo-600'}`}
+                            />
+                        </div>
+                        <select
+                            value={selectedCategory}
+                            onChange={(e) => setSelectedCategory(e.target.value)}
+                            className={`w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 ${isDark ? 'bg-gray-700 border-gray-600 text-white focus:ring-indigo-500' : 'bg-white border-gray-300 focus:ring-indigo-600'}`}
+                        >
+                            <option value="">Todas las categorías</option>
+                            {categories.map(cat => (
+                                <option key={cat.id} value={cat.id}>{cat.name}</option>
+                            ))}
+                        </select>
+                    </div>
+                </div>
+
+                {Object.keys(groupedCourses).length > 0 ? (
+                    <div className="space-y-12">
+                        {Object.entries(groupedCourses).map(([monthYear, categoriesInMonth]) => (
+                            <div key={monthYear}>
+                                <h2 className={`text-2xl font-bold mb-6 pb-2 border-b-2 ${isDark ? 'text-blue-400 border-blue-400/30' : 'text-blue-600 border-blue-600/30'}`}>{monthYear}</h2>
+                                <div className="space-y-8">
+                                    {Object.entries(categoriesInMonth).map(([categoryName, coursesInCategory]) => (
+                                        <div key={categoryName}>
+                                            <h3 className={`text-xl font-semibold mb-4 ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{categoryName}</h3>
+                                            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                                                {coursesInCategory.map(course => {
+                                                    const isCompleted = completedCourses.includes(course.id);
+                                                    return (
+                                                        <div key={course.id} className={`relative flex flex-col rounded-xl shadow-lg overflow-hidden transition-all duration-300 hover:shadow-2xl hover:-translate-y-2 border ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+                                                            {/* --- ✅ MEJORA: Insignia de curso completado --- */}
+                                                            {isCompleted && (
+                                                                <div className="absolute top-2 right-2 bg-green-500 text-white rounded-full p-1.5 z-10 shadow-lg">
+                                                                    <CheckCircle2 size={20} />
+                                                                </div>
+                                                            )}
+                                                            <div className="relative">
+                                                                <img src={course.imageUrl || '/placeholder.png'} alt={course.title} className="w-full h-48 object-cover" />
+                                                                {isCompleted && <div className="absolute inset-0 bg-black/30"></div>}
+                                                            </div>
                                                             <div className="p-6 flex flex-col flex-grow">
                                                                 <h4 className={`text-xl font-bold mb-2 ${isDark ? 'text-white' : 'text-gray-900'}`}>{course.title}</h4>
-                                                                <p className={`text-sm mb-4 h-24 overflow-hidden ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{course.description}</p>
-                                                                <div className="mt-auto">
-                                                                    <button onClick={() => setSelectedCourse(course)} className="w-full inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-4 rounded-lg transition duration-300">
-                                                                        <BookOpen size={20} /> Ver Curso
+                                                                <p className={`text-sm mb-4 flex-grow ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>{course.description}</p>
+                                                                <div className="mt-auto pt-4 space-y-2">
+                                                                    <button onClick={() => handleToggleComplete(course.id, isCompleted)} className={`w-full inline-flex items-center justify-center gap-2 font-semibold py-2 px-4 rounded-lg transition duration-300 text-sm ${isCompleted ? (isDark ? 'bg-green-500/20 text-green-300' : 'bg-green-100 text-green-700') : (isDark ? 'bg-gray-600 hover:bg-gray-500 text-white' : 'bg-gray-200 hover:bg-gray-300 text-gray-800')}`}>
+                                                                        {isCompleted ? <><CheckCircle2 size={16} /> Curso Visto</> : <><Bookmark size={16} /> Marcar como Visto</>}
+                                                                    </button>
+                                                                    <button onClick={() => router.push(`/app/coursesPagoUnico/ContenidoCursos/${course.id}`)} className="w-full inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-4 rounded-lg transition duration-300">
+                                                                        <BookOpen size={20} /> Ver Contenido
                                                                     </button>
                                                                 </div>
                                                             </div>
                                                         </div>
-                                                    ))}
-                                                </div>
+                                                    )
+                                                })}
                                             </div>
-                                        ))}
-                                    </div>
+                                        </div>
+                                    ))}
                                 </div>
-                            ))}
-                        </div>
-                    ) : (
-                        <p className="text-center text-gray-500 py-16">No hay cursos disponibles en este momento.</p>
-                    )}
-                </div>
-            )}
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="text-center py-16">
+                        <h3 className="text-xl font-semibold">No se encontraron cursos</h3>
+                        <p className={`${isDark ? 'text-gray-400' : 'text-gray-600'} mt-2`}>Intenta ajustar tu búsqueda o filtro de categoría.</p>
+                    </div>
+                )}
+            </div>
         </div>
     );
 }
