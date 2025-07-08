@@ -1,65 +1,82 @@
-// src/context/AuthContext.jsx
 'use client';
 import { createContext, useState, useEffect, useContext, useCallback } from 'react';
-import { auth, db } from '@/lib/firebase'; // Asegúrate de importar db
+import { auth, db } from '@/lib/firebase';
 import { onAuthStateChanged, getIdTokenResult, signOut as fbSignOut } from 'firebase/auth';
-import { doc, onSnapshot, getDoc } from 'firebase/firestore'; // Importar doc y onSnapshot
+import { doc, onSnapshot, getDoc, setDoc, serverTimestamp } from 'firebase/firestore'; // Importar setDoc y serverTimestamp
 import { useRouter } from 'next/navigation';
 
 const AuthContext = createContext();
 
 export function AuthProvider({ children }) {
   const router = useRouter();
-  const [user, setUser] = useState(null); // Este user contendrá los datos de Firestore combinados
+  const [user, setUser] = useState(null);
   const [role, setRole] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [firebaseAuthUser, setFirebaseAuthUser] = useState(null); // Para mantener el usuario de Firebase Auth separado si es necesario
+  const [firebaseAuthUser, setFirebaseAuthUser] = useState(null);
 
   useEffect(() => {
     setLoading(true);
     const unsubAuth = onAuthStateChanged(auth, async (fbUser) => {
-      setFirebaseAuthUser(fbUser); // Guardar el usuario de Firebase Auth
+      setFirebaseAuthUser(fbUser);
       if (fbUser) {
         console.log('AuthContext: Firebase user detected:', fbUser.uid);
         try {
-          const tokenResult = await getIdTokenResult(fbUser, true); // Forzar refresh del token
+          const tokenResult = await getIdTokenResult(fbUser, true);
           const emailFallback = fbUser.email === (process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'admin@admin.com') ? 'admin' : 'user';
           const assignedRole = tokenResult.claims.role || emailFallback;
           setRole(assignedRole);
           console.log('AuthContext: Role assigned:', assignedRole);
 
-          // Ahora, escuchar los datos del usuario desde Firestore
           const userDocRef = doc(db, 'users', fbUser.uid);
-          const unsubFirestore = onSnapshot(userDocRef, (docSnap) => {
+          const unsubFirestore = onSnapshot(userDocRef, async (docSnap) => { // Hacemos el callback async
             if (docSnap.exists()) {
               console.log('AuthContext: Firestore user data received:', docSnap.data());
-              // Combinar datos de Firebase Auth con los de Firestore
               setUser({
-                uid: fbUser.uid, // Desde Firebase Auth
-                email: fbUser.email, // Desde Firebase Auth
-                displayName: fbUser.displayName, // Desde Firebase Auth (si lo usas)
-                // ...otros campos de fbUser que quieras mantener
-                ...docSnap.data() // Todos los campos de tu documento en Firestore (incluyendo cursosPagados)
-              });
-            } else {
-              console.warn('AuthContext: User document does not exist in Firestore for uid:', fbUser.uid);
-              // El usuario está autenticado en Firebase pero no tiene documento en Firestore
-              // Decide cómo manejar esto: ¿crear un documento? ¿usar datos básicos?
-              setUser({ // Establecer un usuario básico sin datos de Firestore
                 uid: fbUser.uid,
                 email: fbUser.email,
                 displayName: fbUser.displayName,
-                // Puedes añadir campos por defecto si es necesario, ej: cursosPagados: []
+                ...docSnap.data()
               });
+              setLoading(false);
+            } else {
+              // --- ¡SOLUCIÓN IMPLEMENTADA AQUÍ! ---
+              // Si el documento no existe, lo creamos.
+              console.warn(`AuthContext: User document does not exist for uid: ${fbUser.uid}. Creating it now.`);
+              
+              const newUserProfile = {
+                email: fbUser.email,
+                name: fbUser.displayName || 'Nuevo Usuario',
+                photoURL: fbUser.photoURL || '/icons/user.jpg', // URL de avatar por defecto
+                role: assignedRole, // Usamos el rol de los claims o el fallback
+                createdAt: serverTimestamp(),
+                isActive: true,
+                subscription: null,
+                cursosPagados: [], // Inicializamos el campo de cursos pagados
+              };
+
+              try {
+                // Creamos el documento en Firestore
+                await setDoc(userDocRef, newUserProfile);
+                console.log("AuthContext: New user document created successfully in Firestore.");
+                // Establecemos el usuario en el estado local para que la UI reaccione inmediatamente
+                setUser({
+                  uid: fbUser.uid,
+                  ...newUserProfile
+                });
+              } catch (error) {
+                console.error("AuthContext: FAILED to create user document:", error);
+                // Si la creación falla, deslogueamos para evitar un estado inconsistente
+                signOut();
+              } finally {
+                setLoading(false);
+              }
             }
-            setLoading(false); // Mover setLoading(false) aquí, después de tener el usuario completo
           }, (error) => {
             console.error("AuthContext: Error listening to Firestore user document:", error);
-            setUser({ uid: fbUser.uid, email: fbUser.email, displayName: fbUser.displayName }); // Fallback a datos básicos
+            setUser({ uid: fbUser.uid, email: fbUser.email, displayName: fbUser.displayName });
             setLoading(false);
           });
 
-          // Retornar la función de desuscripción para Firestore
           return () => {
             console.log('AuthContext: Unsubscribing from Firestore user document for', fbUser.uid);
             unsubFirestore();
@@ -80,12 +97,11 @@ export function AuthProvider({ children }) {
       }
     });
 
-    // Retornar la función de desuscripción para onAuthStateChanged
     return () => {
       console.log('AuthContext: Unsubscribing from onAuthStateChanged.');
       unsubAuth();
     };
-  }, []); // Ejecutar solo una vez al montar
+  }, []);
 
   const signOut = async () => {
     setLoading(true);
@@ -99,25 +115,15 @@ export function AuthProvider({ children }) {
       }
       await fbSignOut(auth);
       console.log('AuthContext: Firebase signOut completado.');
-      // setUser y setRole se limpiarán por onAuthStateChanged
-      console.log('AuthContext: Redirigiendo a /login...');
       router.push('/login');
     } catch (error) {
       console.error('AuthContext: Error durante signOut:', error);
-      // Incluso si hay error, intenta limpiar localmente y redirigir
-      setUser(null);
-      setRole(null);
-      setFirebaseAuthUser(null);
-      setLoading(false); // Asegurar que loading se actualice
-      router.push('/login'); // Forzar redirección
+      router.push('/login');
     }
-    // setLoading(false) se maneja dentro del try/catch o por onAuthStateChanged
   };
 
-  // Función para refrescar manualmente los datos del usuario desde Firestore
-  // Útil si no quieres depender únicamente de onSnapshot o necesitas forzar una recarga
   const refreshUserData = useCallback(async () => {
-    if (firebaseAuthUser && firebaseAuthUser.uid) {
+    if (firebaseAuthUser?.uid) {
       console.log('AuthContext: Refreshing user data for', firebaseAuthUser.uid);
       setLoading(true);
       try {
@@ -131,8 +137,8 @@ export function AuthProvider({ children }) {
             ...docSnap.data()
           });
         } else {
-           console.warn('AuthContext (refreshUserData): User document does not exist in Firestore.');
-           setUser({ uid: firebaseAuthUser.uid, email: firebaseAuthUser.email, displayName: firebaseAuthUser.displayName });
+          console.warn('AuthContext (refreshUserData): User document does not exist in Firestore.');
+          setUser({ uid: firebaseAuthUser.uid, email: firebaseAuthUser.email, displayName: firebaseAuthUser.displayName });
         }
       } catch (error) {
         console.error('AuthContext: Error refreshing user data:', error);
@@ -140,7 +146,7 @@ export function AuthProvider({ children }) {
         setLoading(false);
       }
     }
-  }, [firebaseAuthUser]); // Depende del usuario de Firebase Auth
+  }, [firebaseAuthUser]);
 
   return (
     <AuthContext.Provider value={{ user, role, loading, signOut, refreshUserData, firebaseAuthUser }}>

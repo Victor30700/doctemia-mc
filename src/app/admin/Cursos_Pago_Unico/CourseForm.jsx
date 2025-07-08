@@ -1,192 +1,232 @@
 'use client';
-import { useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { addDoc, updateDoc, doc, serverTimestamp, collection, onSnapshot } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
-import { collection, addDoc, updateDoc, doc } from 'firebase/firestore';
+import { singlePaymentCoursesCollectionRef } from '@/lib/db';
 import Swal from 'sweetalert2';
 import { useTheme } from '@/context/ThemeContext';
+import { Book, FileText, Link as LinkIcon, Image as ImageIcon, Layers, Video, Plus, Trash2, ToggleLeft, ToggleRight } from 'lucide-react';
 
-export default function CourseForm({ course }) {
+// Componente para el formulario de Cursos de Pago Único con mejoras de estilo y funcionalidad
+export default function CourseForm({ course, courseId }) {
   const router = useRouter();
-  const { id: courseId } = useParams();
   const { isDark } = useTheme();
 
-  const [name, setName] = useState(course?.name || '');
-  const [description, setDescription] = useState(course?.description || '');
-  const [price, setPrice] = useState(course?.price || '');
-  const [image, setImage] = useState(course?.image || '');
-  // Nuevo estado para el enlace del resumen de Drive
-  const [summaryDriveLink, setSummaryDriveLink] = useState(course?.summaryDriveLink || '');
-  const [isActive, setIsActive] = useState(course?.isActive !== undefined ? course.isActive : true);
-  const [videos, setVideos] = useState(course?.videos || [{ url: '', description: '', order: 1 }]);
+  // Estados del formulario
+  const [title, setTitle] = useState(course ? course.title : '');
+  const [description, setDescription] = useState(course ? course.description : '');
+  const [imageUrl, setImageUrl] = useState(course ? course.imageUrl : '');
+  const [summaryDriveLink, setSummaryDriveLink] = useState(course ? course.summaryDriveLink : '');
+  const [categoryId, setCategoryId] = useState(course ? course.categoryId : '');
+  const [isActive, setIsActive] = useState(course?.isActive !== undefined ? course.isActive : true); // Nuevo estado para Activo/Inactivo
+  const [categories, setCategories] = useState([]);
+  const [modules, setModules] = useState(course?.modules && course.modules.length > 0 ? course.modules : [{ title: '', videos: [{ title: '', url: '' }] }]);
+  const [loading, setLoading] = useState(false);
 
   const swalTheme = {
     background: isDark ? '#1f2937' : '#ffffff',
     color: isDark ? '#f9fafb' : '#111827',
-    confirmButtonColor: '#3b82f6',
-    cancelButtonColor: '#ef4444',
+    confirmButtonColor: '#4f46e5', // Indigo
+    cancelButtonColor: '#ef4444', // Red
   };
 
-  const handleAddVideo = () => {
-    setVideos([...videos, { url: '', description: '', order: videos.length + 1 }]);
+  // Hook para obtener las categorías de Firestore
+  useEffect(() => {
+    const categoriesRef = collection(db, 'course_categories');
+    const unsubscribe = onSnapshot(categoriesRef, (snapshot) => {
+      const categoriesData = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      categoriesData.sort((a, b) => a.name.localeCompare(b.name));
+      setCategories(categoriesData);
+    });
+    return () => unsubscribe();
+  }, []);
+
+  // --- MANEJADORES PARA MÓDULOS Y VIDEOS ---
+  const handleModuleChange = (index, event) => {
+    const newModules = [...modules];
+    newModules[index][event.target.name] = event.target.value;
+    setModules(newModules);
   };
 
-  const handleRemoveVideo = (index) => {
-    if (videos.length > 1) {
-      const updatedVideos = videos.filter((_, i) => i !== index);
-      setVideos(updatedVideos.map((video, idx) => ({ ...video, order: idx + 1 })));
+  const addModule = () => {
+    setModules([...modules, { title: '', videos: [{ title: '', url: '' }] }]);
+  };
+
+  const removeModule = (index) => {
+    if (modules.length > 1) {
+      const newModules = [...modules];
+      newModules.splice(index, 1);
+      setModules(newModules);
+    } else {
+      Swal.fire({ title: 'Aviso', text: 'Debe haber al menos un módulo.', icon: 'info', ...swalTheme });
     }
   };
 
-  const handleVideoChange = (index, field, value) => {
-    const newVideos = [...videos];
-    newVideos[index][field] = value;
-    setVideos(newVideos);
+  const handleVideoChange = (moduleIndex, videoIndex, event) => {
+    const newModules = [...modules];
+    newModules[moduleIndex].videos[videoIndex][event.target.name] = event.target.value;
+    setModules(newModules);
   };
 
+  const addVideo = (moduleIndex) => {
+    const newModules = [...modules];
+    newModules[moduleIndex].videos.push({ title: '', url: '' });
+    setModules(newModules);
+  };
+
+  const removeVideo = (moduleIndex, videoIndex) => {
+    const newModules = [...modules];
+    if (newModules[moduleIndex].videos.length > 1) {
+      newModules[moduleIndex].videos.splice(videoIndex, 1);
+      setModules(newModules);
+    } else {
+      Swal.fire({ title: 'Aviso', text: 'Debe haber al menos un video por módulo.', icon: 'info', ...swalTheme });
+    }
+  };
+
+  // --- MANEJADOR PARA ENVIAR EL FORMULARIO ---
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!title.trim()) {
+        Swal.fire({ title: 'Campo Obligatorio', text: 'El título del curso no puede estar vacío.', icon: 'warning', ...swalTheme });
+        return;
+    }
+    setLoading(true);
 
     const courseData = {
-      name,
+      title,
       description,
-      price: parseFloat(price),
-      image,
-      summaryDriveLink, // Añadir el nuevo campo a los datos del curso
+      imageUrl,
+      summaryDriveLink,
       isActive,
-      videos: videos.map((video, index) => ({
-        url: video.url,
-        description: video.description,
-        order: index + 1,
-      })),
+      categoryId: categoryId || null,
+      modules,
+      updatedAt: serverTimestamp(),
     };
 
     try {
       if (courseId) {
-        await updateDoc(doc(db, 'courses', courseId), courseData);
-        Swal.fire({ title: 'Actualizado', text: 'El curso ha sido actualizado.', icon: 'success', ...swalTheme });
+        const courseDoc = doc(singlePaymentCoursesCollectionRef, courseId);
+        await updateDoc(courseDoc, courseData);
+        Swal.fire({ title: 'Actualizado', text: 'El curso ha sido actualizado con éxito.', icon: 'success', ...swalTheme });
       } else {
-        await addDoc(collection(db, 'courses'), courseData);
-        Swal.fire({ title: 'Creado', text: 'El curso ha sido creado.', icon: 'success', ...swalTheme });
+        await addDoc(singlePaymentCoursesCollectionRef, {
+          ...courseData,
+          createdAt: serverTimestamp(),
+        });
+        Swal.fire({ title: 'Creado', text: 'El curso ha sido creado con éxito.', icon: 'success', ...swalTheme });
       }
-      router.push('/admin/courses');
+      router.push('/admin/Cursos_Pago_Unico');
     } catch (error) {
-      console.error('Error al guardar el curso:', error);
-      Swal.fire({ title: 'Error', text: 'No se pudo guardar el curso.', icon: 'error', ...swalTheme });
+      console.error("Error saving course: ", error);
+      Swal.fire({ title: 'Error', text: 'Hubo un error al guardar el curso.', icon: 'error', ...swalTheme });
+    } finally {
+      setLoading(false);
     }
   };
-  
-  const labelStyle = { color: isDark ? '#d1d5db' : '#374151' };
-  const inputStyle = {
-    backgroundColor: isDark ? '#374151' : '#ffffff',
-    color: isDark ? '#f9fafb' : '#111827',
-    borderColor: isDark ? '#4b5563' : '#d1d5db'
-  };
+
+  const inputBaseClasses = "w-full rounded-md border-0 py-2.5 px-4 shadow-sm ring-1 ring-inset focus:ring-2 focus:ring-inset focus:ring-indigo-600 sm:text-sm sm:leading-6 transition-colors duration-200";
+  const inputThemeClasses = isDark ? "bg-gray-700 text-white ring-gray-600 placeholder:text-gray-400" : "bg-white text-gray-900 ring-gray-300 placeholder:text-gray-400";
+  const labelClasses = "block text-sm font-medium leading-6 " + (isDark ? "text-gray-300" : "text-gray-900");
 
   return (
-    <section 
-      className="p-4 sm:p-6 min-h-screen transition-colors duration-300"
-      style={{ backgroundColor: isDark ? '#111827' : '#f9fafb' }}
-    >
-      <div className='flex justify-between items-center mb-6'>
-        <h1 
-          className="text-2xl font-bold"
-          style={{ color: isDark ? '#60a5fa' : '#3b82f6' }}
-        >
-          {courseId ? 'Editar Curso Pago Unico' : 'Agregar Curso Pago Unico'}
-        </h1>
-        <button onClick={() => router.push('/admin/courses')} className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg transition">
-          Volver Atrás
-        </button>
-      </div>
-      
-      <form 
-        onSubmit={handleSubmit} 
-        className="shadow-lg rounded-lg p-6 space-y-6 border"
-        style={{ 
-          backgroundColor: isDark ? '#1f2937' : '#ffffff',
-          borderColor: isDark ? '#374151' : '#e5e7eb'
-        }}
-      >
-        <div className="space-y-2">
-          <label style={labelStyle}>Nombre del Curso:</label>
-          <input type="text" value={name} onChange={(e) => setName(e.target.value)} className="w-full p-2 border rounded" style={inputStyle} required />
-        </div>
-
-        <div className="space-y-2">
-          <label style={labelStyle}>Descripción del Curso:</label>
-          <textarea value={description} onChange={(e) => setDescription(e.target.value)} className="w-full p-2 border rounded" style={inputStyle} required></textarea>
-        </div>
-
-        <div className="space-y-2">
-          <label style={labelStyle}>Precio del Curso (Bs):</label>
-          <input type="number" step="0.01" value={price} onChange={(e) => setPrice(e.target.value)} className="w-full p-2 border rounded" style={inputStyle} required />
-        </div>
-
-        <div className="space-y-2">
-          <label style={labelStyle}>Imagen (URL):</label>
-          <input type="text" value={image} onChange={(e) => setImage(e.target.value)} className="w-full p-2 border rounded" style={inputStyle} required />
-        </div>
-
-        {/* Campo para el Resumen del Curso (Link de Drive) */}
-        <div className="space-y-2">
-          <label style={labelStyle}>Resumen del curso (Link Drive):</label>
-          <input 
-            type="text" 
-            value={summaryDriveLink} 
-            onChange={(e) => setSummaryDriveLink(e.target.value)} 
-            className="w-full p-2 border rounded" 
-            style={inputStyle} 
-            placeholder="https://docs.google.com/..."
-          />
-        </div>
-
-        <div className="space-y-2">
-          <label style={labelStyle}>Estado del Curso:</label>
-          <select value={isActive} onChange={(e) => setIsActive(e.target.value === 'true')} className="w-full p-2 border rounded" style={inputStyle}>
-            <option value="true">Activo</option>
-            <option value="false">Inactivo</option>
-          </select>
-        </div>
-
-        <div className="space-y-4">
-          <label style={labelStyle}>Videos del Curso:</label>
-          {videos.map((video, index) => (
-            <div key={index} className="flex items-center gap-2 mb-2 p-3 rounded border" style={{ borderColor: isDark ? '#4b5563' : '#e5e7eb' }}>
-              <div className="flex-grow space-y-2">
-                <input
-                  type="text"
-                  value={video.url}
-                  onChange={(e) => handleVideoChange(index, 'url', e.target.value)}
-                  placeholder="URL del Video"
-                  className="w-full p-2 border rounded"
-                  style={inputStyle}
-                  required
-                />
-                <input
-                  type="text"
-                  value={video.description}
-                  onChange={(e) => handleVideoChange(index, 'description', e.target.value)}
-                  placeholder="Descripción del Video"
-                  className="w-full p-2 border rounded"
-                  style={inputStyle}
-                  required
-                />
-              </div>
-              {videos.length > 1 && (
-                <button type="button" onClick={() => handleRemoveVideo(index)} className="bg-red-600 text-white px-3 py-2 rounded self-start hover:bg-red-700 transition">X</button>
-              )}
+    <div className={`min-h-screen p-4 sm:p-6 lg:p-8 ${isDark ? 'bg-gray-900' : 'bg-gray-50'}`}>
+        <form onSubmit={handleSubmit} className="space-y-8 max-w-4xl mx-auto">
+            <div className="space-y-2">
+                <h1 className={`text-3xl font-bold tracking-tight ${isDark ? 'text-white' : 'text-gray-900'}`}>{courseId ? 'Editar' : 'Crear'} Curso</h1>
+                <p className={`text-md ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                    {courseId ? 'Modifica los detalles del curso.' : 'Completa la información para crear un nuevo curso.'}
+                </p>
             </div>
-          ))}
-          <button type="button" onClick={handleAddVideo} className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded transition">
-            Añadir Video +
-          </button>
-        </div>
 
-        <button type="submit" className="w-full bg-green-600 hover:bg-green-700 text-white px-4 py-3 rounded-lg font-bold text-lg transition">
-          {courseId ? 'Actualizar Curso' : 'Crear Curso'}
-        </button>
-      </form>
-    </section>
+            {/* --- SECCIÓN DE DATOS PRINCIPALES --- */}
+            <div className={`p-6 border rounded-lg shadow-sm ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+                <h2 className="text-lg font-semibold leading-7 text-indigo-400 mb-6">Información General</h2>
+                <div className="grid grid-cols-1 gap-x-6 gap-y-8 sm:grid-cols-6">
+                    <div className="sm:col-span-6">
+                        <label htmlFor="title" className={labelClasses}>Título del Curso <span className="text-red-500">*</span></label>
+                        <div className="mt-2">
+                            <input type="text" id="title" value={title} onChange={(e) => setTitle(e.target.value)} required className={`${inputBaseClasses} ${inputThemeClasses}`} />
+                        </div>
+                    </div>
+                    <div className="sm:col-span-3">
+                        <label htmlFor="category" className={labelClasses}>Categoría (Opcional)</label>
+                        <div className="mt-2">
+                            <select id="category" value={categoryId} onChange={(e) => setCategoryId(e.target.value)} className={`${inputBaseClasses} ${inputThemeClasses}`}>
+                                <option value="">-- Sin categoría --</option>
+                                {categories.map((cat) => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
+                            </select>
+                        </div>
+                    </div>
+                    <div className="sm:col-span-3">
+                        <label htmlFor="status" className={labelClasses}>Estado del Curso</label>
+                        <div className="mt-2">
+                            <select id="status" value={isActive} onChange={(e) => setIsActive(e.target.value === 'true')} className={`${inputBaseClasses} ${inputThemeClasses}`}>
+                                <option value="true">Activo (Visible para usuarios)</option>
+                                <option value="false">Inactivo (Oculto para usuarios)</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div className="sm:col-span-6">
+                        <label htmlFor="description" className={labelClasses}>Descripción</label>
+                        <div className="mt-2">
+                            <textarea id="description" value={description} onChange={(e) => setDescription(e.target.value)} rows="4" className={`${inputBaseClasses} ${inputThemeClasses}`}></textarea>
+                        </div>
+                    </div>
+                    <div className="sm:col-span-3">
+                        <label htmlFor="imageUrl" className={labelClasses}>URL de la Imagen</label>
+                        <div className="mt-2">
+                            <input type="text" id="imageUrl" value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} placeholder="https://ejemplo.com/imagen.jpg" className={`${inputBaseClasses} ${inputThemeClasses}`} />
+                        </div>
+                    </div>
+                    <div className="sm:col-span-3">
+                        <label htmlFor="summaryDriveLink" className={labelClasses}>Link de Resumen (Drive)</label>
+                        <div className="mt-2">
+                            <input type="text" id="summaryDriveLink" value={summaryDriveLink} onChange={(e) => setSummaryDriveLink(e.target.value)} placeholder="https://docs.google.com/..." className={`${inputBaseClasses} ${inputThemeClasses}`} />
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* --- SECCIÓN DE MÓDULOS Y VIDEOS --- */}
+            <div className={`p-6 border rounded-lg shadow-sm ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
+                 <h2 className="text-lg font-semibold leading-7 text-indigo-400 mb-6">Contenido del Curso</h2>
+                <div className="space-y-6">
+                    {modules.map((module, moduleIndex) => (
+                        <div key={moduleIndex} className={`p-4 border rounded-md ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+                            <div className="flex justify-between items-center mb-4">
+                                <h3 className={`font-semibold ${isDark ? 'text-white' : 'text-gray-900'}`}>Módulo {moduleIndex + 1}</h3>
+                                <button type="button" onClick={() => removeModule(moduleIndex)} className="text-red-600 hover:text-red-500 p-1 rounded-full transition-colors"><Trash2 size={18} /></button>
+                            </div>
+                            <input type="text" name="title" value={module.title} onChange={(e) => handleModuleChange(moduleIndex, e)} placeholder="Título del Módulo" className={`mb-4 ${inputBaseClasses} ${inputThemeClasses}`} />
+                            <div className="space-y-3 pl-4 border-l-2 border-indigo-500">
+                                {module.videos.map((video, videoIndex) => (
+                                    <div key={videoIndex} className={`p-3 border rounded-md relative ${isDark ? 'border-gray-600' : 'border-gray-200'}`}>
+                                        <h4 className={`text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>Video {videoIndex + 1}</h4>
+                                        <div className="space-y-2">
+                                            <input type="text" name="title" value={video.title} onChange={(e) => handleVideoChange(moduleIndex, videoIndex, e)} placeholder="Título del Video" className={`${inputBaseClasses} ${inputThemeClasses}`} />
+                                            <input type="text" name="url" value={video.url} onChange={(e) => handleVideoChange(moduleIndex, videoIndex, e)} placeholder="URL del Video" className={`${inputBaseClasses} ${inputThemeClasses}`} />
+                                        </div>
+                                        <button type="button" onClick={() => removeVideo(moduleIndex, videoIndex)} className="absolute top-2 right-2 text-red-600 hover:text-red-500 p-1 rounded-full transition-colors"><Trash2 size={16} /></button>
+                                    </div>
+                                ))}
+                                <button type="button" onClick={() => addVideo(moduleIndex)} className="inline-flex items-center gap-2 text-sm font-semibold text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300 mt-2"><Plus size={16} /> Añadir Video</button>
+                            </div>
+                        </div>
+                    ))}
+                    <button type="button" onClick={addModule} className="inline-flex items-center gap-2 text-sm font-semibold text-green-600 hover:text-green-500 dark:text-green-400 dark:hover:text-green-300"><Plus size={16} /> Añadir Módulo</button>
+                </div>
+            </div>
+
+            {/* --- BOTONES DE ACCIÓN --- */}
+            <div className="flex items-center justify-end gap-x-6">
+                <button type="button" onClick={() => router.back()} className="text-sm font-semibold leading-6 text-gray-900 dark:text-gray-200">Cancelar</button>
+                <button type="submit" disabled={loading} className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:bg-gray-400">
+                    {loading ? 'Guardando...' : (courseId ? 'Actualizar Curso' : 'Crear Curso')}
+                </button>
+            </div>
+        </form>
+    </div>
   );
 }
