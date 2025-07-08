@@ -54,6 +54,10 @@ export default function QRGestionPage() {
             toast.error('El número de teléfono del administrador es obligatorio.');
             return;
         }
+        if(!preview){
+            toast.error('Por favor, proporciona un enlace válido para el nuevo QR.');
+            return;
+        }
 
         const toastId = toast.loading('Actualizando información...');
 

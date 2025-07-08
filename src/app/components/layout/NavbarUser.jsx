@@ -45,7 +45,7 @@ export default function NavbarUser({ children }) {
         { href: '/app/courses/cursosPagados', label: 'Mis Cursos Adquiridos', Icon: BookmarkCheck },
       ]
     },
-    user?.hasPagoUnicoAccess && { href: '/app/coursesPagoUnico', label: 'Cursos Pago Único', Icon: BookMarked },
+    /*user?.hasPagoUnicoAccess &&*/ { href: '/app/coursesPagoUnico', label: 'Cursos Pago Único', Icon: BookMarked },
     { type: 'separator', label: 'Herramientas' },
     { href: '/app/examen-test', label: 'Exámenes', Icon: FileText },
     { href: '/app/clases-en-vivo', label: 'Clases en Vivo', Icon: Video },
