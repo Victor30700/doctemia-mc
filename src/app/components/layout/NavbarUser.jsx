@@ -42,10 +42,13 @@ export default function NavbarUser({ children }) {
       Icon: Star,
       subItems: [
         { href: '/app/courses', label: 'Catálogo Premium', Icon: ShoppingBag },
-        { href: '/app/courses/cursosPagados', label: 'Mis Cursos Adquiridos', Icon: BookmarkCheck },
+        { href: '/app/cursosPagados', label: 'Mis Cursos Adquiridos', Icon: BookmarkCheck },
       ]
     },
-    /*user?.hasPagoUnicoAccess &&*/ { href: '/app/coursesPagoUnico', label: 'Cursos Pago Único', Icon: BookMarked },
+    /*user?.hasPagoUnicoAccess &&*/ 
+    /* Se modifico el nombre de la carpeta coursesPagoUnico a pagoUnicoCourses
+    no puede comenzar dos carpetas con la misma palabra porque se van a activar las dos en el sidebar*/
+    { href: '/app/pagoUnicoCourses', label: 'Cursos Pago Único', Icon: BookMarked },
     { type: 'separator', label: 'Herramientas' },
     { href: '/app/examen-test', label: 'Exámenes', Icon: FileText },
     { href: '/app/clases-en-vivo', label: 'Clases en Vivo', Icon: Video },
