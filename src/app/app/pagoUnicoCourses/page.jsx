@@ -282,7 +282,7 @@ export default function CoursesPagoUnicoPage() {
                                                                     <button onClick={() => handleToggleComplete(course.id, isCompleted)} className={`w-full inline-flex items-center justify-center gap-2 font-semibold py-2 px-4 rounded-lg transition duration-300 text-sm ${isCompleted ? (isDark ? 'bg-green-500/20 text-green-300' : 'bg-green-100 text-green-700') : (isDark ? 'bg-gray-600 hover:bg-gray-500 text-white' : 'bg-gray-200 hover:bg-gray-300 text-gray-800')}`}>
                                                                         {isCompleted ? <><CheckCircle2 size={16} /> Curso Visto</> : <><Bookmark size={16} /> Marcar como Visto</>}
                                                                     </button>
-                                                                    <button onClick={() => router.push(`/app/coursesPagoUnico/ContenidoCursos/${course.id}`)} className="w-full inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-4 rounded-lg transition duration-300">
+                                                                    <button onClick={() => router.push(`/app/pagoUnicoCourses/ContenidoCursos/${course.id}`)} className="w-full inline-flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold py-3 px-4 rounded-lg transition duration-300">
                                                                         <BookOpen size={20} /> Ver Contenido
                                                                     </button>
                                                                 </div>

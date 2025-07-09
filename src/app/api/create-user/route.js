@@ -41,7 +41,7 @@ export async function POST(request) {
         fechaVencimiento: '-',
         // --- ✅ Corrección Implementada ---
         // Se añade el campo con valor `false` por defecto para el control de acceso.
-        hasPagoUnicoAccess: true,
+        hasPagoUnicoAccess: false,
         createdAt: new Date().toISOString(),
         mesesSuscrito: 0,
       });

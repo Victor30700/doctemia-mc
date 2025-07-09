@@ -6,19 +6,19 @@ import useSWR, { mutate } from 'swr';
 import Swal from 'sweetalert2';
 import 'sweetalert2/dist/sweetalert2.min.css';
 import { fetcher } from '@/lib/fetcher';
-import { useTheme } from '@/context/ThemeContext'; // 1. Importar hook
+import { useTheme } from '@/context/ThemeContext';
+import { CheckCircle, XCircle, Phone } from 'lucide-react'; // Importar iconos para hasPagoUnicoAccess y teléfono
 
 export default function UsersClient() {
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredUsers, setFilteredUsers] = useState([]);
-  const { isDark, isLoaded } = useTheme(); // 2. Obtener el estado del tema
+  const { isDark, isLoaded } = useTheme();
 
   const { data: usersData, error } = useSWR('/api/users', fetcher, {
-    refreshInterval: 5000,
+    refreshInterval: 5000, // Mantener el refresco para ver cambios rápidamente
   });
 
-  // 3. Definir estilos para SweetAlert2
   const swalTheme = {
     background: isDark ? '#1f2937' : '#ffffff',
     color: isDark ? '#f9fafb' : '#111827',
@@ -30,11 +30,14 @@ export default function UsersClient() {
     if (!usersData) return;
     const term = searchTerm.toLowerCase();
     setFilteredUsers(
-      usersData.filter(user =>
-        (user.fullName && user.fullName.toLowerCase().includes(term)) ||
-        (user.email && user.email.toLowerCase().includes(term)) ||
-        (user.profesion && user.profesion.toLowerCase().includes(term))
-      )
+      usersData
+        .filter(user => user.role !== 'admin') // ✅ CAMBIO CLAVE: Filtrar usuarios con rol 'admin'
+        .filter(user =>
+          (user.fullName && user.fullName.toLowerCase().includes(term)) ||
+          (user.email && user.email.toLowerCase().includes(term)) ||
+          (user.profesion && user.profesion.toLowerCase().includes(term)) ||
+          (user.telefono && user.telefono.toLowerCase().includes(term))
+        )
     );
   }, [searchTerm, usersData]);
 
@@ -57,7 +60,7 @@ export default function UsersClient() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ userId }),
         });
-        mutate('/api/users');
+        mutate('/api/users'); // Revalida los datos para actualizar la UI
         Swal.fire({ title: 'Estado actualizado', text: 'El estado del usuario ha sido cambiado.', icon: 'success', ...swalTheme });
       } catch (err) {
         Swal.fire({ title: 'Error', text: 'No se pudo cambiar el estado del usuario.', icon: 'error', ...swalTheme });
@@ -80,38 +83,37 @@ export default function UsersClient() {
 
     if (result.isConfirmed) {
       try {
-        await fetch('/api/delete-user', {
+        const response = await fetch('/api/delete-user', {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ userId: user.id }),
         });
-        mutate('/api/users');
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || 'Error al eliminar usuario');
+        }
+
+        mutate('/api/users'); 
         Swal.fire({ title: 'Usuario Eliminado', text: 'El usuario ha sido eliminado correctamente.', icon: 'success', ...swalTheme });
       } catch (err) {
-        Swal.fire({ title: 'Error', text: 'No se pudo eliminar el usuario.', icon: 'error', ...swalTheme });
+        console.error("Error al eliminar usuario:", err);
+        Swal.fire({ title: 'Error', text: err.message || 'No se pudo eliminar el usuario.', icon: 'error', ...swalTheme });
       }
     }
   };
 
-  const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
-    const date = new Date(dateString);
-    if (isNaN(date.getTime())) return 'Fecha inválida';
-    return date.toLocaleDateString('es-ES');
-  };
-
-  // 4. Estados de carga y error que respetan el tema
   if (!isLoaded || !usersData) {
-     return (
-       <section 
-         className="min-h-screen flex items-center justify-center"
-         style={{ backgroundColor: isDark ? '#111827' : '#f9fafb' }}
-       >
-         <p style={{ color: isDark ? '#f9fafb' : '#111827' }} className="text-lg animate-pulse">
-           Cargando usuarios...
-         </p>
-       </section>
-     );
+      return (
+        <section 
+          className="min-h-screen flex items-center justify-center"
+          style={{ backgroundColor: isDark ? '#111827' : '#f9fafb' }}
+        >
+          <p style={{ color: isDark ? '#f9fafb' : '#111827' }} className="text-lg animate-pulse">
+            Cargando usuarios...
+          </p>
+        </section>
+      );
   }
 
   if (error) {
@@ -127,7 +129,6 @@ export default function UsersClient() {
     );
   }
 
-  // 5. Estilos en línea para los elementos de la UI
   const containerStyle = { backgroundColor: isDark ? '#111827' : '#f9fafb' };
   const textStyle = { color: isDark ? '#f9fafb' : '#111827' };
   const inputStyle = {
@@ -158,7 +159,7 @@ export default function UsersClient() {
 
       <input
         type="text"
-        placeholder="Buscar por nombre, correo o profesión..."
+        placeholder="Buscar por nombre, correo, profesión o teléfono..."
         value={searchTerm}
         onChange={(e) => setSearchTerm(e.target.value)}
         className="w-full mb-6 p-3 rounded-lg border focus:outline-none focus:ring-2"
@@ -169,7 +170,7 @@ export default function UsersClient() {
         <table className="min-w-full" style={tableBgStyle}>
           <thead style={tableHeaderStyle}>
             <tr>
-              {['Nombre', 'Correo', 'Profesión', 'Estado', 'Inicio Sus.', 'Fin Sus.', 'Acciones'].map(header => (
+              {['Nombre', 'Correo', 'Profesión', 'Estado', 'Pago Único', 'Teléfono', 'Acciones'].map(header => (
                 <th key={header} className="py-3 px-4 text-left text-sm font-semibold uppercase tracking-wider" style={{ color: isDark ? '#f9fafb' : '#374151' }}>{header}</th>
               ))}
             </tr>
@@ -190,8 +191,27 @@ export default function UsersClient() {
                     {user.active ? 'Activo' : 'Inactivo'}
                   </span>
                 </td>
-                <td className="py-3 px-4 whitespace-nowrap" style={tableCellStyle}>{formatDate(user.fechaSuscripcion)}</td>
-                <td className="py-3 px-4 whitespace-nowrap" style={tableCellStyle}>{formatDate(user.fechaVencimiento)}</td>
+                <td className="py-3 px-4 whitespace-nowrap">
+                  <div className="flex items-center gap-2">
+                    {user.hasPagoUnicoAccess ? (
+                      <>
+                        <CheckCircle className="w-5 h-5 text-green-500" />
+                        <span className="text-sm font-medium" style={tableCellStyle}>Sí</span>
+                      </>
+                    ) : (
+                      <>
+                        <XCircle className="w-5 h-5 text-red-500" />
+                        <span className="text-sm font-medium" style={tableCellStyle}>No</span>
+                      </>
+                    )}
+                  </div>
+                </td>
+                <td className="py-3 px-4 whitespace-nowrap" style={tableCellStyle}>
+                  <div className="flex items-center gap-2">
+                    <Phone className="w-4 h-4 text-gray-400" />
+                    <span>{user.telefono || 'N/A'}</span>
+                  </div>
+                </td>
                 <td className="py-3 px-4">
                   <div className="flex items-center gap-2">
                     <button onClick={() => router.push(`/admin/users/edit/${user.id}`)} className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded-md text-sm font-medium">Editar</button>

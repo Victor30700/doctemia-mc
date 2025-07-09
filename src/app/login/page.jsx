@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../../lib/firebase'; // Asegúrate que la ruta sea correcta
 import Swal from 'sweetalert2';
+import Image from 'next/image'; // Importar el componente Image de Next.js
 
 export default function LoginPage() {
   const router = useRouter();
@@ -42,17 +43,18 @@ export default function LoginPage() {
       }
 
       // 4. Si la API fue exitosa (usuario activo, cookies establecidas)
-      await Swal.fire({
-        icon: 'success',
-        title: '¡Bienvenido!',
-        text: 'Has iniciado sesión correctamente.',
-        timer: 1200,
-        showConfirmButton: false,
-      });
+      // await Swal.fire({
+      //   icon: 'success',
+      //   title: '¡Bienvenido!',
+      //   text: 'Has iniciado sesión correctamente.',
+      //   timer: 1200,
+      //   showConfirmButton: false,
+      //   background: '#1f2937', // Fondo oscuro para la alerta
+      //   color: '#f9fafb', // Texto claro para la alerta
+      //   confirmButtonColor: '#3b82f6',
+      // });
 
       // 5. Redirigir basado en el rol devuelto por la API
-      //    AuthContext se actualizará automáticamente debido al cambio de estado
-      //    y el middleware usará las cookies establecidas por la API.
       router.replace(data.role === 'admin' ? '/admin' : '/app');
 
     } catch (err) {
@@ -74,7 +76,14 @@ export default function LoginPage() {
       } else { // Error de la API u otro error
         errorMessage = err.message;
       }
-      await Swal.fire('Error de Inicio de Sesión', errorMessage, 'error');
+      await Swal.fire({
+        title: 'Error de Inicio de Sesión',
+        text: errorMessage,
+        icon: 'error',
+        background: '#1f2937', // Fondo oscuro para la alerta
+        color: '#f9fafb', // Texto claro para la alerta
+        confirmButtonColor: '#3b82f6',
+      });
     } finally {
       setLoading(false);
     }
@@ -85,66 +94,108 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100 dark:bg-gray-900 p-4">
-      <form
-        onSubmit={handleSubmit}
-        className="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-lg w-full max-w-md space-y-6"
-      >
-        <h1 className="text-2xl font-bold text-center text-gray-900 dark:text-white">
-          Iniciar Sesión
-        </h1>
+    // Contenedor principal con el fondo de imagen y altura completa
+    <div
+      className="relative flex flex-col items-center justify-center min-h-screen bg-cover bg-center"
+      style={{ backgroundImage: "url('/images/fondoLogin.png')" }}
+    >
+      {/* Overlay oscuro para mejorar la legibilidad del contenido */}
+      <div className="absolute inset-0 bg-black opacity-60 z-0"></div>
 
-        <div>
-          <label htmlFor="email" // Added htmlFor
-                 className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-            Correo electrónico
-          </label>
-          <input
-            id="email" // Added id
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            className="mt-1 w-full p-2 border rounded bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-blue-500 focus:border-blue-500" // Added focus styles
-          />
-        </div>
+      {/* Contenido principal: Logo, Formulario y Texto de Bienvenida */}
+      <div className="relative z-10 w-full h-full flex flex-col md:flex-row items-center justify-center p-4 md:p-8 lg:p-12 max-w-screen-xl mx-auto">
+        
+        {/* Sección Izquierda: Formulario de Login */}
+        <div className="bg-gray-900/80 p-6 sm:p-8 rounded-xl shadow-2xl w-full max-w-sm md:max-w-md border border-purple-700/50 transform transition-transform duration-300 hover:scale-105 md:mr-8 lg:mr-16 mb-8 md:mb-0"
+             style={{boxShadow: '0 0 30px rgba(128, 0, 128, 0.5), 0 0 60px rgba(79, 70, 229, 0.3)'}}>
+          
+          {/* Logo del sistema dentro del formulario */}
+          <div className="text-center mb-6">
+            <Image
+              src="/icons/1-oscuro.png" // Logo para modo oscuro (letras claras)
+              alt="DOCTEMIA MC Logo"
+              width={160}
+              height={48}
+              priority
+              className="mx-auto"
+            />
+          </div>
 
-        <div>
-          <label htmlFor="password" // Added htmlFor
-                 className="block text-sm font-medium text-gray-700 dark:text-gray-300">
-            Contraseña
-          </label>
-          <input
-            id="password" // Added id
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            className="mt-1 w-full p-2 border rounded bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-blue-500 focus:border-blue-500" // Added focus styles
-          />
-        </div>
+          
 
-        <button
-          type="submit"
-          disabled={loading}
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white py-2 rounded shadow transition duration-150 ease-in-out disabled:opacity-50 disabled:cursor-not-allowed" // Added transition and disabled styles
-        >
-          {loading ? 'Cargando...' : 'Ingresar'}
-        </button>
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div>
+              <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-1">
+                Correo electrónico
+              </label>
+              <input
+                id="email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                className="mt-1 w-full p-3.5 border border-purple-600/50 rounded-lg bg-gray-800 text-white placeholder-gray-400 focus:ring-purple-500 focus:border-purple-500 transition duration-200 ease-in-out"
+                placeholder="correo@example.com"
+              />
+            </div>
 
-        <div className="text-center">
-          <p className="text-sm text-gray-600 dark:text-gray-400">
-            ¿No tienes cuenta?{' '}
+            <div>
+              <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-1">
+                Contraseña
+              </label>
+              <input
+                id="password"
+                type="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                className="mt-1 w-full p-3.5 border border-purple-600/50 rounded-lg bg-gray-800 text-white placeholder-gray-400 focus:ring-purple-500 focus:border-purple-500 transition duration-200 ease-in-out"
+                placeholder="password"
+              />
+            </div>
+
             <button
-              type="button"
-              onClick={goToRegister}
-              className="font-medium text-blue-600 hover:underline dark:text-blue-400" // Made it look more like a link
+              type="submit"
+              disabled={loading}
+              className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold py-3.5 rounded-full shadow-lg transition duration-200 ease-in-out transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
+              style={{boxShadow: '0 5px 15px rgba(128, 0, 128, 0.4)'}}
             >
-              Regístrate
+              {loading ? 'Cargando...' : 'Ingresar'}
             </button>
-          </p>
+          </form>
+
+          <div className="text-center mt-5">
+            <p className="text-sm text-gray-400">
+              ¿No tienes cuenta?{' '}
+              <button
+                type="button"
+                onClick={goToRegister}
+                className="font-medium text-purple-400 hover:underline hover:text-purple-300 transition duration-200 ease-in-out"
+              >
+                Regístrate
+              </button>
+            </p>
+          </div>
         </div>
-      </form>
+
+        {/* Sección Derecha: Texto de Bienvenida */}
+        <div className="flex flex-col items-center md:items-start text-center md:text-left">
+          <h2 className="text-4xl md:text-5xl font-extrabold text-white mb-4 leading-tight">
+            Iniciar sesion
+          </h2>
+          <h1 className="text-2xl font-extrabold text-center text-white mb-6 tracking-wide">
+            Welcome
+          </h1>
+          <button
+            type="button"
+            onClick={goToRegister} // Reutilizamos goToRegister para el botón "Sign up now"
+            className="px-8 py-3 bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-bold rounded-full shadow-lg hover:from-blue-700 hover:to-cyan-600 transition duration-200 ease-in-out transform hover:scale-105"
+            style={{boxShadow: '0 5px 15px rgba(59, 130, 246, 0.4)'}}
+          >
+            Regístrate ahora
+          </button>
+        </div>
+      </div>
     </div>
   );
 }

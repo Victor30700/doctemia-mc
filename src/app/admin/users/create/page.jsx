@@ -105,7 +105,7 @@ export default function RegisterPage() {
         timerProgressBar: true,
         ...swalTheme
       });
-      router.push('/login');
+      router.push('/admin/users');
     } catch (err) {
       await Swal.fire({ title: 'Error de Registro', text: err.message, icon: 'error', ...swalTheme });
     } finally {
