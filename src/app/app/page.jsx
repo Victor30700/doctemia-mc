@@ -17,7 +17,7 @@ import {
   UserCircle,
   BookmarkCheck,
   Clock, Cloud, CloudSun, Cloudy, CloudRain, CloudSnow, CloudLightning, Loader,
-  BookMarked,
+  BookMarked, Sun,
 } from 'lucide-react';
 
 // --- Componente para Tarjeta de Acceso Mejorada ---
