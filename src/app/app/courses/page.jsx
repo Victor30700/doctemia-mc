@@ -1,20 +1,115 @@
-// Archivo: src/app/app/courses/page.jsx
-
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { db } from '@/lib/firebase';
-import { collection, getDocs, addDoc, serverTimestamp, query, where, doc, getDoc } from 'firebase/firestore';
+import { collection, getDocs, query, where, doc, getDoc, onSnapshot, addDoc, serverTimestamp, updateDoc, arrayUnion, arrayRemove } from 'firebase/firestore';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
-import Image from 'next/image';
 import Swal from 'sweetalert2';
+import { LockKeyhole, Send, Hourglass, BookOpen, Search, CheckCircle2, Bookmark } from 'lucide-react';
+import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 
-const NUMERO_WHATSAPP_MAJO = '+59168706660';
-const NOMBRE_NEGOCIO_MAJO = 'DOCTEMIA MC';
+// Ya no necesitamos estas constantes aquí, se obtendrán de Firebase
+// const NUMERO_WHATSAPP_MAJO = '+59168706660';
+// const NOMBRE_NEGOCIO_MAJO = 'DOCTEMIA MC'; // Se usará un valor por defecto si no se encuentra en Firebase
+
+// El componente AccessDeniedScreen no necesita cambios, pero lo incluyo para contexto
+// y para asegurar que el NOMBRE_NEGOCIO se obtenga de forma consistente.
+const AccessDeniedScreen = ({ user, isDark, swalTheme }) => {
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [requestSent, setRequestSent] = useState(false);
+    // ✅ CAMBIO: contactInfo ahora incluye adminPhone y businessName
+    const [contactInfo, setContactInfo] = useState({ qrUrl: '', adminPhone: '', businessName: 'DOCTEMIA MC' }); 
+    
+    useEffect(() => {
+        const checkRequestAndLoadInfo = async () => {
+            if (user) {
+                const q = query(collection(db, "pagoUnico_solicitudes"), where("userId", "==", user.uid), where("status", "==", "pendiente"));
+                const querySnapshot = await getDocs(q);
+                if (!querySnapshot.empty) {
+                    setRequestSent(true);
+                }
+            }
+            // ✅ CAMBIO: Obtener infoContacto que incluye qrUrl, adminPhone y businessName
+            const contactInfoRef = doc(db, 'pags', 'infoContacto');
+            const docSnap = await getDoc(contactInfoRef);
+            if (docSnap.exists()) {
+                setContactInfo(prev => ({ ...prev, ...docSnap.data() })); // Fusionar datos existentes con los de Firebase
+            }
+        };
+        checkRequestAndLoadInfo();
+    }, [user]);
+
+    const handleRequestAccessPopup = () => {
+        Swal.fire({
+            title: '<h3 class="text-2xl font-bold text-indigo-500">¡Solicita tu Acceso!</h3>',
+            html: `
+                <div class="text-left space-y-4 p-4 ${isDark ? 'text-gray-300' : 'text-gray-700'}">
+                    <p class="text-center">Completa el pago usando el QR y luego contáctanos por WhatsApp para una activación inmediata.</p>
+                    <div class="flex justify-center my-4">
+                        ${contactInfo.qrUrl ? `<img src="${contactInfo.qrUrl}" alt="Código QR de Pago" class="w-48 h-48 rounded-lg border-2 ${isDark ? 'border-gray-600' : 'border-gray-300'}"/>` : '<p>Código QR no disponible.</p>'}
+                    </div>
+                    <p class="text-center font-semibold">¿Ya pagaste?</p>
+                    <a id="whatsapp-link" href="https://api.whatsapp.com/send?phone=${contactInfo.adminPhone}&text=${encodeURIComponent(`Hola ${contactInfo.businessName}, soy ${user.name || user.displayName || user.email}. Acabo de realizar el pago para el acceso a los cursos de pago único. Adjunto mi comprobante.`)}" target="_blank" class="flex items-center justify-center gap-2 w-full bg-green-500 text-white font-bold py-3 px-4 rounded-lg transition hover:bg-green-600">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
+                        Contactar por WhatsApp
+                    </a>
+                    <div class="relative my-4">
+                        <div class="absolute inset-0 flex items-center"><span class="w-full border-t ${isDark ? 'border-gray-600' : 'border-gray-300'}"></span></div>
+                        <div class="relative flex justify-center text-xs uppercase"><span class="bg-${isDark ? 'gray-800' : 'white'} px-2 text-gray-500"> O </span></div>
+                    </div>
+                    <p class="text-center">Si prefieres, envía una solicitud y te contactaremos.</p>
+                    <input id="swal-input-phone" class="swal2-input" placeholder="Tu número de WhatsApp (ej: +591...)" type="tel">
+                </div>
+            `,
+            showCancelButton: true,
+            confirmButtonText: 'Enviar Solicitud',
+            cancelButtonText: 'Cancelar',
+            ...swalTheme,
+            customClass: { popup: isDark ? 'bg-gray-800' : 'bg-white' },
+            preConfirm: () => {
+                const phone = Swal.getPopup().querySelector('#swal-input-phone').value;
+                if (!phone) { Swal.showValidationMessage(`Por favor, ingresa tu número de WhatsApp`); }
+                return { phone };
+            }
+        }).then(async (result) => {
+            if (result.isConfirmed) {
+                setIsSubmitting(true);
+                try {
+                    await addDoc(collection(db, "pagoUnico_solicitudes"), { userId: user.uid, userName: user.name || user.displayName || user.email, userEmail: user.email, userPhone: result.value.phone, requestDate: serverTimestamp(), status: 'pendiente', type: 'pago_unico_access' });
+                    setRequestSent(true);
+                    Swal.fire({ title: '¡Solicitud Enviada!', text: 'Te contactaremos pronto.', icon: 'success', ...swalTheme });
+                } catch (error) {
+                    console.error("Error al crear solicitud:", error);
+                    Swal.fire({ title: 'Error', text: 'No se pudo enviar tu solicitud.', icon: 'error', ...swalTheme });
+                } finally {
+                    setIsSubmitting(false);
+                }
+            }
+        });
+    };
+
+    return (
+        <div className={`flex flex-col items-center justify-center min-h-[calc(100vh-8rem)] text-center p-6 ${isDark ? 'bg-gray-900' : 'bg-gray-50'}`}>
+            <LockKeyhole className={`h-20 w-20 mb-6 ${isDark ? 'text-indigo-400' : 'text-indigo-500'}`} />
+            <h1 className={`text-3xl font-bold ${isDark ? 'text-white' : 'text-gray-900'}`}>Acceso Restringido</h1>
+            <p className={`mt-4 max-w-md text-lg ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>Para ver el catálogo de cursos de pago único, necesitas la aprobación de un administrador.</p>
+            <div className="mt-8">
+                {requestSent ? (
+                    <div className="flex items-center gap-3 p-4 rounded-lg bg-yellow-400/20 text-yellow-700 dark:text-yellow-300"><Hourglass className="h-6 w-6" /> <span className="font-semibold">Tu solicitud está pendiente.</span></div>
+                ) : (
+                    <button onClick={handleRequestAccessPopup} disabled={isSubmitting} className="inline-flex items-center gap-3 rounded-md bg-indigo-600 px-6 py-3 text-lg font-semibold text-white shadow-sm hover:bg-indigo-500 disabled:bg-gray-400">{isSubmitting ? 'Procesando...' : 'Solicitar Acceso Ahora'} <Send className="h-5 w-5" /></button>
+                )}
+            </div>
+        </div>
+    );
+};
+
 
 export default function UserListCoursesPage() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const { isDark } = useTheme();
+  const router = useRouter(); 
   const [availableCourses, setAvailableCourses] = useState([]);
   const [pendingCourses, setPendingCourses] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -22,7 +117,8 @@ export default function UserListCoursesPage() {
   const [examDate, setExamDate] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [userPhone, setUserPhone] = useState('');
-  const [qrUrl, setQrUrl] = useState('');
+  // ✅ CAMBIO: contactInfo para almacenar QR y número de admin
+  const [contactInfo, setContactInfo] = useState({ qrUrl: '', adminPhone: '', businessName: 'DOCTEMIA MC' }); 
 
   useEffect(() => {
     if (!user) {
@@ -32,15 +128,17 @@ export default function UserListCoursesPage() {
 
     const fetchData = async () => {
       try {
+        // Obtener el teléfono del usuario
         const userDoc = await getDoc(doc(db, 'users', user.uid));
         if (userDoc.exists()) {
           setUserPhone(userDoc.data().telefono || '');
         }
 
-        const qrDocRef = doc(db, 'pags', 'qr');
-        const qrDoc = await getDoc(qrDocRef);
-        if (qrDoc.exists()) {
-          setQrUrl(qrDoc.data().url);
+        // ✅ CAMBIO: Obtener infoContacto (QR y adminPhone) del documento 'infoContacto'
+        const contactInfoRef = doc(db, 'pags', 'infoContacto');
+        const contactDoc = await getDoc(contactInfoRef);
+        if (contactDoc.exists()) {
+          setContactInfo(contactDoc.data());
         }
 
         const coursesSnapshot = await getDocs(collection(db, 'courses'));
@@ -91,7 +189,7 @@ export default function UserListCoursesPage() {
       await addDoc(collection(db, 'solicitudes'), {
         userId: user.uid,
         userEmail: user.email,
-        userName: user.displayName,
+        userName: user.displayName || user.email, // Usar email si displayName no está disponible
         userPhone,
         courseId: selectedCourseForPurchase.id,
         courseName: selectedCourseForPurchase.name,
@@ -109,9 +207,10 @@ export default function UserListCoursesPage() {
       setPendingCourses(prev => [...prev, selectedCourseForPurchase]);
       setAvailableCourses(prev => prev.filter(c => c.id !== selectedCourseForPurchase.id));
 
-      const mensaje = `Hola ${NOMBRE_NEGOCIO_MAJO}, soy ${user.displayName} (${user.email}). He pagado por el curso: "${selectedCourseForPurchase.name}".`;
+      // ✅ CAMBIO: Usar contactInfo.adminPhone y contactInfo.businessName
+      const mensaje = `Hola ${contactInfo.businessName}, soy ${user.displayName || user.email}. He pagado por el curso: "${selectedCourseForPurchase.name}".`;
       window.open(
-        `https://api.whatsapp.com/send?phone=${NUMERO_WHATSAPP_MAJO}&text=${encodeURIComponent(mensaje)}`,
+        `https://api.whatsapp.com/send?phone=${contactInfo.adminPhone}&text=${encodeURIComponent(mensaje)}`,
         '_blank'
       );
       handleClosePurchaseModal();
@@ -124,17 +223,18 @@ export default function UserListCoursesPage() {
   };
 
   const handlePendingClick = course => {
-    const mensaje = `Mi solicitud al curso "${course.name}" está tardando mucho.`;
+    // ✅ CAMBIO: Usar contactInfo.adminPhone y contactInfo.businessName
+    const mensaje = `Hola ${contactInfo.businessName}, mi solicitud al curso "${course.name}" está tardando mucho.`;
     Swal.fire({
       title: '¿Tu solicitud está tardando mucho?',
-      html: `<a href="https://api.whatsapp.com/send?phone=${NUMERO_WHATSAPP_MAJO}&text=${encodeURIComponent(
+      html: `<a href="https://api.whatsapp.com/send?phone=${contactInfo.adminPhone}?text=${encodeURIComponent(
         mensaje
       )}" target="_blank" class="underline">Contactar por WhatsApp</a>`,
       icon: 'info',
     });
   };
 
-  if (loading) {
+  if (authLoading || loading) {
     return (
       <div
         className={`flex justify-center items-center h-screen ${
@@ -228,9 +328,9 @@ export default function UserListCoursesPage() {
                 isDark ? 'text-gray-100' : 'text-gray-900'
               }`}>1. Realiza el pago escaneando el siguiente QR:</p>
               <div className="flex justify-center my-2">
-                {qrUrl ? (
-                  <Image
-                    src={qrUrl}
+                {contactInfo.qrUrl ? (
+                  <img
+                    src={contactInfo.qrUrl} // ✅ CAMBIO: Usar contactInfo.qrUrl
                     alt="Código QR para pago"
                     width={200}
                     height={200}
@@ -242,14 +342,14 @@ export default function UserListCoursesPage() {
                 )}
               </div>
               <p className={`text-sm mb-2 ${isDark ? 'text-gray-100' : 'text-gray-900'}`}>
-                O realiza una transferencia a la cuenta de {NOMBRE_NEGOCIO_MAJO}.
+                O realiza una transferencia a la cuenta de {contactInfo.businessName}. {/* ✅ CAMBIO: Usar contactInfo.businessName */}
               </p>
               <p className={`font-semibold mb-2 ${
                 isDark ? 'text-gray-100' : 'text-gray-900'
               }`}>2. Envía el comprobante de pago a nuestro WhatsApp:</p>
               <a
-                href={`https://wa.me/${NUMERO_WHATSAPP_MAJO}?text=${encodeURIComponent(
-                  `Hola ${NOMBRE_NEGOCIO_MAJO}, quiero enviar mi comprobante para el curso "${selectedCourseForPurchase.name}".`
+                href={`https://wa.me/${contactInfo.adminPhone}?text=${encodeURIComponent( // ✅ CAMBIO: Usar contactInfo.adminPhone
+                  `Hola ${contactInfo.businessName}, quiero enviar mi comprobante para el curso "${selectedCourseForPurchase.name}".` // ✅ CAMBIO: Usar contactInfo.businessName
                 )}`}
                 target="_blank"
                 rel="noopener noreferrer"
@@ -257,7 +357,7 @@ export default function UserListCoursesPage() {
                   isDark ? 'text-green-400 hover:text-green-300' : 'text-green-500 hover:text-green-700'
                 }`}
               >
-                Contactar por WhatsApp ({NUMERO_WHATSAPP_MAJO})
+                Contactar por WhatsApp ({contactInfo.adminPhone}) {/* ✅ CAMBIO: Usar contactInfo.adminPhone */}
               </a>
             </div>
 
@@ -303,8 +403,8 @@ export default function UserListCoursesPage() {
                       ? 'bg-blue-400 cursor-not-allowed'
                       : 'bg-blue-300 cursor-not-allowed'
                     : isDark
-                    ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                    : 'bg-blue-500 hover:bg-blue-700 text-white'
+                      ? 'bg-blue-600 hover:bg-blue-700 text-white'
+                      : 'bg-blue-500 hover:bg-blue-700 text-white'
                 }`}
               >
                 Hecho, Enviar Solicitud

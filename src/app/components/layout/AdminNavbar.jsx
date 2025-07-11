@@ -4,7 +4,7 @@ import { usePathname } from 'next/navigation';
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { db } from '@/lib/firebase';
-import { collection, onSnapshot } from 'firebase/firestore';
+import { collection, onSnapshot, doc, getDoc } from 'firebase/firestore'; // Importar doc y getDoc para obtener el nombre del usuario
 import { useTheme } from '@/context/ThemeContext';
 // Importamos iconos nuevos, incluyendo KeyRound para las nuevas solicitudes
 import {
@@ -21,11 +21,13 @@ export default function AdminNavbar({ children }) {
   const [showNotifications, setShowNotifications] = useState(false);
   const { isDark, toggleTheme, isLoaded } = useTheme();
   const [isMobile, setIsMobile] = useState(false);
+  // ✅ NUEVO ESTADO: Para almacenar el nombre del admin de Firestore
+  const [adminName, setAdminName] = useState('Admin'); 
 
   const bellButtonRef = useRef(null);
   const notificationsPanelRef = useRef(null);
 
-  // Hook para detectar si es vista móvil y ajustar el sidebar (Lógica original restaurada)
+  // Hook para detectar si es vista móvil y ajustar el sidebar
   useEffect(() => {
     const checkMobile = () => {
       const mobile = window.innerWidth < 768;
@@ -41,10 +43,34 @@ export default function AdminNavbar({ children }) {
     return () => window.removeEventListener('resize', checkMobile);
   }, []);
 
+  // ✅ NUEVO HOOK: Para obtener el nombre del admin de Firestore
+  useEffect(() => {
+    if (user && user.uid && user.role === 'admin') {
+      const fetchAdminName = async () => {
+        try {
+          const adminDocRef = doc(db, 'users', user.uid);
+          const docSnap = await getDoc(adminDocRef);
+          if (docSnap.exists()) {
+            const data = docSnap.data();
+            // Tomar solo la primera palabra del nombre
+            const firstName = data.name ? data.name.split(' ')[0] : 'Admin';
+            setAdminName(firstName);
+          }
+        } catch (error) {
+          console.error("Error al obtener el nombre del admin:", error);
+          setAdminName('Admin'); // Fallback si hay error
+        }
+      };
+      fetchAdminName();
+    } else {
+      setAdminName('Admin'); // Resetear si no es admin o no hay user
+    }
+  }, [user]); // Dependencia en el objeto user
+
   const toggleSidebar = () => setIsSidebarOpen(!isSidebarOpen);
   const toggleNotifications = () => setShowNotifications(!showNotifications);
 
-  // Hook para cerrar el panel de notificaciones al hacer clic fuera (sin cambios)
+  // Hook para cerrar el panel de notificaciones al hacer clic fuera
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (
@@ -60,10 +86,9 @@ export default function AdminNavbar({ children }) {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Hook para obtener notificaciones (sin cambios)
+  // Hook para obtener notificaciones
   useEffect(() => {
     if (!user) return;
-    // Escucha ambas colecciones de solicitudes
     const unsubPremium = onSnapshot(collection(db, 'solicitudes'), (snapshot) => {
         const premiumData = snapshot.docs.map(doc => ({ ...doc.data(), type: 'Premium' }));
         setNotifications(prev => [...prev.filter(p => p.type !== 'Premium'), ...premiumData]);
@@ -79,25 +104,24 @@ export default function AdminNavbar({ children }) {
     };
   }, [user]);
 
-  // --- ITEMS DE NAVEGACIÓN CON MEJORAS INTEGRADAS ---
+  // --- ITEMS DE NAVEGACIÓN ---
   const navItems = [
     { type: 'link', href: '/admin', label: 'Inicio', icon: <Home className="w-5 h-5" /> },
     { type: 'link', href: '/admin/users', label: 'Usuarios', icon: <Users className="w-5 h-5" /> },
-    { type: 'separator' }, // Separador visual
+    { type: 'separator' },
     { type: 'link', href: '/admin/courses', label: 'Cursos Premium', icon: <Star className="w-5 h-5" /> },
     { type: 'link', href: '/admin/Cursos_Pago_Unico', label: 'Cursos Pago Único', icon: <ShoppingBag className="w-5 h-5" /> },
     { type: 'link', href: '/admin/Cursos_Pago_Unico/categoria', label: 'Categorías', icon: <Tags className="w-5 h-5" /> },
-    { type: 'separator' }, // Separador visual
+    { type: 'separator' },
     { type: 'link', href: '/admin/bank-preguntas', label: 'Exámenes', icon: <FileText className="w-5 h-5" /> },
     { type: 'link', href: '/admin/solicitudes', label: 'Solicitudes Premium', icon: <Wallet className="w-5 h-5" /> },
-    // --- NUEVO ENLACE AÑADIDO ---
     { type: 'link', href: '/admin/solicitudes-pago-unico', label: 'Solicitudes de Acceso', icon: <KeyRound className="w-5 h-5" /> },
     { type: 'separator' },
     { type: 'link', href: '/admin/live-classes', label: 'Clases en Vivo', icon: <Video className="w-5 h-5" /> },
     { type: 'link', href: '/admin/qr-gestion', label: 'Gestión de QR', icon: <QrCode className="w-5 h-5" /> },
   ];
 
-  // Estilos condicionales (sin cambios)
+  // Estilos condicionales
   const headerStyle = { backgroundColor: isDark ? '#1f2937' : '#ffffff', borderBottomColor: isDark ? '#374151' : '#e5e7eb', color: isDark ? '#f9fafb' : '#111827' };
   const sidebarStyle = { backgroundColor: isDark ? '#1f2937' : '#ffffff', borderRightColor: isDark ? '#374151' : '#e5e7eb' };
   const mainStyle = { backgroundColor: isDark ? '#111827' : '#f9fafb' };
@@ -119,7 +143,7 @@ export default function AdminNavbar({ children }) {
     <>
       {isMobile && isSidebarOpen && <div className="fixed inset-0 bg-black/60 z-30" onClick={toggleSidebar}></div>}
 
-      {/* Header (sin cambios) */}
+      {/* Header */}
       <header className="border-b px-4 py-3 flex justify-between items-center fixed top-0 left-0 w-full z-40 shadow-sm transition-colors duration-200" style={headerStyle}>
         <div className="flex items-center gap-4">
           <div className="cursor-pointer" onClick={toggleSidebar}>
@@ -158,18 +182,19 @@ export default function AdminNavbar({ children }) {
               </div>
             </div>
           )}
+          {/* ✅ CAMBIO: Foto de perfil y botón de cerrar sesión en el header (solo para desktop) */}
           {!isMobile && user && (
-            <>
+            <Link href="/admin/profile" className="flex items-center gap-2 cursor-pointer">
               <img src={user.photoURL || "/icons/user.jpg"} alt="user" className={`w-8 h-8 rounded-full border-2 ${isDark ? 'border-gray-600' : 'border-gray-200'}`} />
               <button onClick={signOut} className={`px-4 py-2 text-white rounded-lg font-medium transition-all duration-200 ${isDark ? 'bg-blue-500 hover:bg-blue-600' : 'bg-blue-600 hover:bg-blue-700'}`}>
                 Cerrar sesión
               </button>
-            </>
+            </Link>
           )}
         </div>
       </header>
 
-      {/* Sidebar (Lógica de layout original restaurada) */}
+      {/* Sidebar */}
       <div
         className="fixed top-0 left-0 h-full pt-16 border-r shadow-lg transition-all duration-300 ease-in-out flex flex-col"
         style={{
@@ -197,25 +222,35 @@ export default function AdminNavbar({ children }) {
           </ul>
         </nav>
 
-        {/* Sección de usuario en el sidebar (sin cambios) */}
+        {/* Sección de usuario en el sidebar */}
         {user && (
           <div className={`border-t p-2 ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
-            <div className={`flex items-center transition-all duration-300 ${isSidebarOpen ? 'flex-row gap-3' : 'flex-col gap-2'}`}>
+            {/* ✅ CAMBIO: Contenedor clicable para la foto y el nombre */}
+            <Link href="/admin/profile" className={`flex items-center transition-all duration-300 cursor-pointer group ${isSidebarOpen ? 'flex-row gap-3' : 'flex-col gap-2'}`}>
               <img src={user.photoURL || "/icons/user.jpg"} alt="user" className={`rounded-full border-2 transition-all duration-300 ${isDark ? 'border-gray-600' : 'border-gray-200'} ${isSidebarOpen ? 'w-10 h-10' : 'w-8 h-8'}`} />
               {isSidebarOpen && (
                 <div className="flex-grow">
-                  <span className={`block text-sm font-medium ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>Admin</span>
+                  {/* ✅ CAMBIO: Mostrar adminName (primera palabra del nombre) */}
+                  <span className={`block text-sm font-medium ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>{adminName}</span>
                 </div>
               )}
-              <button onClick={signOut} className={`rounded-lg transition-all duration-300 ${isSidebarOpen ? 'p-2 bg-red-500 text-white hover:bg-red-600' : 'p-1 text-gray-500 hover:text-red-500'}`}>
-                <LogOut className="w-5 h-5" />
-              </button>
-            </div>
+              {/* El botón de cerrar sesión se mueve al header para desktop, se mantiene oculto en mobile aquí */}
+              {!isSidebarOpen && ( // Solo mostrar el icono de cerrar sesión si el sidebar está colapsado en mobile
+                 <button onClick={signOut} className={`rounded-lg transition-all duration-300 p-1 text-gray-500 hover:text-red-500`}>
+                   <LogOut className="w-5 h-5" />
+                 </button>
+              )}
+            </Link>
+            {isSidebarOpen && ( // Mostrar el botón de cerrar sesión completo solo si el sidebar está abierto
+                <button onClick={signOut} className={`mt-2 w-full p-2 bg-red-500 text-white rounded-lg font-medium hover:bg-red-600 transition-all duration-200`}>
+                  Cerrar sesión
+                </button>
+            )}
           </div>
         )}
       </div>
 
-      {/* Contenido Principal (Lógica de layout original restaurada) */}
+      {/* Contenido Principal */}
       <main
         className="pt-16 transition-all duration-300 ease-in-out min-h-screen"
         style={{
