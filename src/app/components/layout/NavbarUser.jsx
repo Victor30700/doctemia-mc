@@ -36,6 +36,9 @@ export default function NavbarUser({ children }) {
   const navItems = useMemo(() => [
     { href: '/app', label: 'Inicio', Icon: Home },
     { type: 'separator', label: 'Contenido' },
+
+  //Descomentar estqa linea para acceder a cursos premiun----------------------------------------------
+/*
     {
       type: 'dropdown',
       label: 'Cursos Premium',
@@ -45,10 +48,13 @@ export default function NavbarUser({ children }) {
         { href: '/app/cursosPagados', label: 'Mis Cursos Adquiridos', Icon: BookmarkCheck },
       ]
     },
+*/
+ //Descomentar estqa linea para acceder a cursos premiun----------------------------------------------
+
     /*user?.hasPagoUnicoAccess &&*/ 
     /* Se modifico el nombre de la carpeta coursesPagoUnico a pagoUnicoCourses
     no puede comenzar dos carpetas con la misma palabra porque se van a activar las dos en el sidebar*/
-    { href: '/app/pagoUnicoCourses', label: 'Cursos Pago Único', Icon: BookMarked },
+    { href: '/app/pagoUnicoCourses', label: 'Cursos', Icon: BookMarked },
     { type: 'separator', label: 'Herramientas' },
     { href: '/app/examen-test', label: 'Exámenes', Icon: FileText },
     { href: '/app/clases-en-vivo', label: 'Clases en Vivo', Icon: Video },

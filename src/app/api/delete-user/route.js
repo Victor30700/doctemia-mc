@@ -1,6 +1,6 @@
 // src/app/api/delete-user/route.js
 import { NextResponse } from 'next/server';
-import { auth, db } from '@/lib/firebaseAdmin';
+import { auth, db } from '@/lib/firebase-admin';
 
 // Usamos el método DELETE que es semánticamente correcto para esta acción.
 export async function DELETE(req) {

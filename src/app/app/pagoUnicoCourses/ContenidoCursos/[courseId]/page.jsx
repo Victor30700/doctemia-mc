@@ -138,7 +138,7 @@ export default function ContenidoCursoPagoUnicoPage() {
         <div className={`min-h-screen ${isDark ? 'bg-gray-900 text-gray-100' : 'bg-gray-100 text-gray-900'}`}>
             <header className={`${isDark ? 'bg-gray-800' : 'bg-white'} shadow-md sticky top-0 z-20`}>
                 <div className="container mx-auto px-4 py-4 flex justify-between items-center">
-                    <button onClick={() => router.push('/app/coursesPagoUnico')} className={`font-medium flex items-center transition ${isDark ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-800'}`}>
+                    <button onClick={() => router.push('/app/pagoUnicoCourses')} className={`font-medium flex items-center transition ${isDark ? 'text-blue-400 hover:text-blue-300' : 'text-blue-600 hover:text-blue-800'}`}>
                         &larr; Volver al Catálogo
                     </button>
                     <h1 className="text-xl md:text-2xl font-bold text-center flex-grow px-4 truncate">{courseDetails.title}</h1>

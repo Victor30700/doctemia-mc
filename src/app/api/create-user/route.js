@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { auth, db } from '@/lib/firebaseAdmin';
+import { auth, db } from '@/lib/firebase-admin';
 
 export async function POST(request) {
   try {
@@ -10,6 +10,7 @@ export async function POST(request) {
       telefono,
       universidad,
       profesion,
+      fechaExamen, // <-- NUEVO CAMPO RECIBIDO
       email,
       password,
       rol,
@@ -33,14 +34,13 @@ export async function POST(request) {
         telefono,
         universidad,
         profesion,
+        fechaExamen, // <-- NUEVO CAMPO GUARDADO
         email,
         rol,
-        active: false,
+        active: true, // <-- CAMBIO: El valor ahora es 'true' por defecto
         isPremium: false,
         fechaSuscripcion: '-',
         fechaVencimiento: '-',
-        // --- ✅ Corrección Implementada ---
-        // Se añade el campo con valor `false` por defecto para el control de acceso.
         hasPagoUnicoAccess: false,
         createdAt: new Date().toISOString(),
         mesesSuscrito: 0,

@@ -1,7 +1,7 @@
 // src/app/api/toggle-active/route.js
 import { NextResponse } from 'next/server';
 // CORRECCIÓN: Se importa 'db' desde el archivo correcto 'firebaseAdmin.js'
-import { db } from '@/lib/firebaseAdmin';
+import { db } from '@/lib/firebase-admin';
 
 export async function POST(req) {
   try {

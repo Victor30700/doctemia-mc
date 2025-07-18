@@ -1,4 +1,3 @@
-// src/app/app/profile/page.jsx
 'use client';
 
 import React, { useState, useEffect } from 'react';
@@ -22,7 +21,8 @@ export default function ProfilePage() {
     sexo: '',
     telefono: '',
     universidad: '',
-    profesion: ''
+    profesion: '',
+    fechaExamen: '' // <-- NUEVO CAMPO AÑADIDO AL ESTADO
   });
   const [passwordData, setPasswordData] = useState({
     currentPassword: '',
@@ -49,7 +49,8 @@ export default function ProfilePage() {
             sexo: data.sexo || '',
             telefono: data.telefono || '',
             universidad: data.universidad || '',
-            profesion: data.profesion || ''
+            profesion: data.profesion || '',
+            fechaExamen: data.fechaExamen || '' // <-- SE OBTIENE EL NUEVO CAMPO
           });
         }
       } catch (error) {
@@ -79,13 +80,15 @@ export default function ProfilePage() {
     setLoadingProfile(true);
     try {
       const userDocRef = doc(db, 'users', user.uid);
+      // ✅ CAMBIO: Se incluye el nuevo campo en la actualización
       await updateDoc(userDocRef, {
         fullName:        profileData.fullName,
         fechaNacimiento: profileData.fechaNacimiento,
         sexo:            profileData.sexo,
         telefono:        profileData.telefono,
         universidad:     profileData.universidad,
-        profesion:       profileData.profesion
+        profesion:       profileData.profesion,
+        fechaExamen:     profileData.fechaExamen // <-- SE ACTUALIZA EL NUEVO CAMPO
       });
 
       if (refreshUserData) {
@@ -262,6 +265,18 @@ export default function ProfilePage() {
               name="profesion"
               id="profesion"
               value={profileData.profesion}
+              onChange={handleProfileChange}
+              className={inputClass}
+            />
+          </div>
+          {/* --- ✅ NUEVO CAMPO AÑADIDO AL FORMULARIO --- */}
+          <div>
+            <label htmlFor="fechaExamen" className={labelClass}>Fecha de Examen:</label>
+            <input
+              type="date"
+              name="fechaExamen"
+              id="fechaExamen"
+              value={profileData.fechaExamen}
               onChange={handleProfileChange}
               className={inputClass}
             />

@@ -14,6 +14,7 @@ export default function RegisterPage() {
     telefono: '',
     universidad: '',
     profesion: '',
+    fechaExamen: '', // <-- NUEVO CAMPO AÑADIDO
     email: '',
     password: '',
   });
@@ -44,10 +45,11 @@ export default function RegisterPage() {
     }
 
     try {
+      // ✅ CAMBIO: Se envía 'active: true' junto con el resto del formulario
       const res = await fetch('/api/create-user', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, rol: 'user' }),
+        body: JSON.stringify({ ...form, rol: 'user', active: true }), // <-- active se envía como true
       });
 
       if (!res.ok) {
@@ -57,7 +59,8 @@ export default function RegisterPage() {
 
       await Swal.fire({
         title: '¡Registrado!',
-        text: 'Tu cuenta ha sido creada. Espera a que el administrador habilite tu acceso.',
+        // Se ajusta el mensaje ya que el usuario ahora está activo por defecto.
+        text: 'Tu cuenta ha sido creada exitosamente. Ahora puedes iniciar sesión.',
         icon: 'success',
         confirmButtonColor: '#3b82f6',
         background: '#1f2937', // Fondo oscuro para la alerta
@@ -86,13 +89,11 @@ export default function RegisterPage() {
       <div className="absolute inset-0 bg-black opacity-60 z-0"></div>
 
       {/* Contenido principal: Formulario Centrado */}
-      {/* ✅ CAMBIO: El contenedor principal de contenido ahora solo contiene el formulario y lo centra */}
       <div className="relative z-10 w-full h-full flex items-center justify-center p-4 md:p-8 lg:p-12">
         
         {/* Sección del Formulario de Registro */}
-        {/* ✅ CAMBIO: max-w-2xl para hacerlo más ancho, bg-transparent en móvil, bg-gray-900/30 en desktop */}
         <section className="bg-transparent md:bg-gray-900/30 p-5 sm:p-7 rounded-xl shadow-2xl w-full max-w-sm md:max-w-xl lg:max-w-2xl transform transition-transform duration-300 hover:scale-102"
-                  style={{boxShadow: '0 0 30px rgba(128, 0, 128, 0.5), 0 0 60px rgba(79, 70, 229, 0.3)'}}>
+                 style={{boxShadow: '0 0 30px rgba(128, 0, 128, 0.5), 0 0 60px rgba(79, 70, 229, 0.3)'}}>
           
           {/* Logo del sistema */}
           <div className="text-center mb-4">
@@ -107,8 +108,6 @@ export default function RegisterPage() {
           </div>
 
           
-
-          {/* ✅ CAMBIO: Todos los campos de input ahora pueden ocupar una columna */}
           <form onSubmit={handleSubmit} className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-4">
             {/* Input de Nombre completo */}
             <div>
@@ -192,6 +191,20 @@ export default function RegisterPage() {
                 aria-label="Profesión o Cargo"
               />
             </div>
+            {/* --- ✅ NUEVO CAMPO AÑADIDO --- */}
+            {/* Input de Fecha de Examen */}
+            <div>
+              <label htmlFor="fechaExamen" className="block text-sm font-medium text-gray-300 mb-1">Fecha de Examen</label>
+              <input
+                id="fechaExamen"
+                name="fechaExamen"
+                type="date"
+                value={form.fechaExamen}
+                onChange={handleChange}
+                className="w-full p-3 border border-purple-600/50 rounded-lg bg-gray-800 text-white placeholder-gray-400 appearance-none transition duration-200 ease-in-out"
+                aria-label="Fecha de Examen"
+              />
+            </div>
             {/* Input de Correo electrónico */}
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-1">Correo electrónico</label>
@@ -207,7 +220,8 @@ export default function RegisterPage() {
               />
             </div>
             {/* Input de Contraseña */}
-            <div>
+            {/* ✅ CAMBIO: Se mueve la contraseña al final y ocupa todo el ancho en pantallas pequeñas */}
+            <div className="sm:col-span-2">
               <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-1">Contraseña</label>
               <input
                 id="password"

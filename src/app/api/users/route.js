@@ -1,4 +1,4 @@
-import { db } from "@/lib/firebaseAdmin";
+import { db } from "@/lib/firebase-admin";
 
 function formatDate(field) {
   if (field?.toDate) {
