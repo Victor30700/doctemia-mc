@@ -82,8 +82,8 @@ export default function UserHomePage() {
   const doctemiaLogoSrc = isDark ? '/icons/1-oscuro.png' : '/icons/1.png';
 
   const userAccessLinks = useMemo(() => [
-    { href: '/app/courses', title: 'Catalogo Cursos Premium', description: 'Explora el catálogo de cursos de suscripción', Icon: Star },
-    { href: '/app/cursosPagados', title: 'Mis Cursos Adquiridos', description: 'Accede a los cursos que has comprado', Icon: BookmarkCheck },
+   // { href: '/app/courses', title: 'Catalogo Cursos Premium', description: 'Explora el catálogo de cursos de suscripción', Icon: Star },
+   // { href: '/app/cursosPagados', title: 'Mis Cursos Adquiridos', description: 'Accede a los cursos que has comprado', Icon: BookmarkCheck },
     { href: '/app/pagoUnicoCourses', title: 'Cursos Pago Único', description: 'Descubre cursos de acceso permanente', Icon: BookMarked },
     { href: '/app/examen-test', title: 'Exámenes', description: 'Pon a prueba tus conocimientos con exámenes', Icon: FileText },
     { href: '/app/clases-en-vivo', title: 'Clases en Vivo', description: 'Participa en sesiones interactivas en tiempo real', Icon: Video },
