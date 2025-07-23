@@ -35,7 +35,8 @@ export default function UsersClient() {
         .filter(user =>
           (user.fullName && user.fullName.toLowerCase().includes(term)) ||
           (user.email && user.email.toLowerCase().includes(term)) ||
-          (user.profesion && user.profesion.toLowerCase().includes(term)) ||
+          //comentado busqueda por profesión, descometar si quiere buscar por profesión
+          //(user.profesion && user.profesion.toLowerCase().includes(term)) ||
           (user.telefono && user.telefono.toLowerCase().includes(term))
         )
     );
@@ -170,7 +171,7 @@ export default function UsersClient() {
         <table className="min-w-full" style={tableBgStyle}>
           <thead style={tableHeaderStyle}>
             <tr>
-              {['Nombre', 'Correo', 'Profesión', 'Estado', 'Pago Único', 'Teléfono', 'Acciones'].map(header => (
+              {['Nombre', 'Correo', 'fechaExamen', 'Estado', 'Pago Único', 'Teléfono', 'Acciones'].map(header => (
                 <th key={header} className="py-3 px-4 text-left text-sm font-semibold uppercase tracking-wider" style={{ color: isDark ? '#f9fafb' : '#374151' }}>{header}</th>
               ))}
             </tr>
@@ -185,7 +186,7 @@ export default function UsersClient() {
               >
                 <td className="py-3 px-4 whitespace-nowrap" style={tableCellStyle}>{user.fullName}</td>
                 <td className="py-3 px-4 whitespace-nowrap" style={tableCellStyle}>{user.email}</td>
-                <td className="py-3 px-4 whitespace-nowrap" style={tableCellStyle}>{user.profesion || 'N/A'}</td>
+                <td className="py-3 px-4 whitespace-nowrap" style={tableCellStyle}>{user.fechaExamen || 'N/A'}</td>
                 <td className="py-3 px-4">
                   <span className={`px-2 py-1 text-xs rounded-full ${user.active ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`}>
                     {user.active ? 'Activo' : 'Inactivo'}

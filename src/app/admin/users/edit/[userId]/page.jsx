@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react'; // ✅ Importar useMemo
+import { useState, useEffect, useMemo } from 'react';
 import { useRouter, useParams } from 'next/navigation';
 import Swal from 'sweetalert2';
 import useSWR, { mutate } from 'swr';
@@ -32,13 +32,12 @@ export default function EditUserPage() {
   // Usamos SWR para obtener los datos de todos los usuarios
   const { data: usersData, error: usersError } = useSWR('/api/users', fetcher);
   
-  // ✅ CORRECCIÓN: Memoizar swalTheme para evitar recrearlo en cada render
   const swalTheme = useMemo(() => ({
     background: isDark ? '#1f2937' : '#ffffff',
     color: isDark ? '#f9fafb' : '#111827',
     confirmButtonColor: '#f59e0b', // Amarillo para consistencia
     cancelButtonColor: '#6b7280',
-  }), [isDark]); // Dependencia en isDark
+  }), [isDark]);
 
   useEffect(() => {
     if (usersData && userId) {
@@ -47,6 +46,9 @@ export default function EditUserPage() {
         setForm({
           ...currentUser,
           fechaNacimiento: firestoreTimestampToInputDate(currentUser.fechaNacimiento),
+          // Asegurarse de que hasPagoUnicoAccess y active sean booleanos
+          hasPagoUnicoAccess: typeof currentUser.hasPagoUnicoAccess === 'boolean' ? currentUser.hasPagoUnicoAccess : false,
+          active: typeof currentUser.active === 'boolean' ? currentUser.active : false,
           password: '', // La contraseña siempre se inicializa vacía para no cambiarla a menos que se ingrese una nueva
         });
       } else {
@@ -63,7 +65,12 @@ export default function EditUserPage() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setForm(prev => ({ ...prev, [name]: value }));
+    // ✅ CAMBIO: Manejar específicamente los campos booleanos
+    if (name === 'hasPagoUnicoAccess' || name === 'active') {
+      setForm(prev => ({ ...prev, [name]: value === 'true' }));
+    } else {
+      setForm(prev => ({ ...prev, [name]: value }));
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -71,7 +78,7 @@ export default function EditUserPage() {
     if (!form || isSubmitting) return;
 
     // ✅ INICIO DE LA VALIDACIÓN DE CAMPOS
-    // Se mantienen solo los campos obligatorios que deben ser editables y visibles
+    // hasPagoUnicoAccess y active NO se incluyen aquí, ya que son selects con valores por defecto
     const requiredFields = [
       'fullName', 'fechaNacimiento', 'sexo', 'telefono', 
       'universidad', 'profesion', 'email'
@@ -115,12 +122,9 @@ export default function EditUserPage() {
       delete updateData.password;
     }
 
-    // ✅ Eliminar los campos que no deben ser enviados si no son relevantes para la actualización
-    // Aunque ya no están en el formulario, es una buena práctica asegurar que no se envíen
+    // Eliminar los campos que no deben ser enviados si no son relevantes para la actualización
     delete updateData.role;
-    delete updateData.active;
-    delete updateData.hasPagoUnicoAccess;
-
+    // ✅ active y hasPagoUnicoAccess NO se eliminan aquí, porque ahora son campos editables y relevantes
 
     try {
       const res = await fetch('/api/users/update', {
@@ -241,7 +245,36 @@ export default function EditUserPage() {
                 placeholder="Dejar en blanco para no cambiar"
               />
             </div>
-            {/* Los campos de rol, estado activo y acceso pago único han sido eliminados del JSX */}
+            {/* ✅ CAMBIO: Campo hasPagoUnicoAccess corregido */}
+            <div>
+              <label htmlFor="hasPagoUnicoAccess" className="text-sm mb-1 block" style={labelStyle}>Acceso Pago Único</label>
+              <select 
+                name="hasPagoUnicoAccess" // Nombre correcto
+                id="hasPagoUnicoAccess"   // ID correcto
+                value={form.hasPagoUnicoAccess ? 'true' : 'false'} // Convertir booleano a string para el select
+                onChange={handleChange} 
+                className="w-full p-3 border rounded-lg" 
+                style={inputStyle}
+              >
+                <option value="true">Sí</option>
+                <option value="false">No</option>
+              </select>
+            </div>
+            {/* ✅ NUEVO CAMPO: Estado (Activo/Inactivo) */}
+            <div>
+              <label htmlFor="active" className="text-sm mb-1 block" style={labelStyle}>Estado (Activo)</label>
+              <select 
+                name="active" 
+                id="active" 
+                value={form.active ? 'true' : 'false'} // Convertir booleano a string para el select
+                onChange={handleChange} 
+                className="w-full p-3 border rounded-lg" 
+                style={inputStyle}
+              >
+                <option value="true">Activo</option>
+                <option value="false">Inactivo</option>
+              </select>
+            </div>
           </div>
 
           <div className="md:col-span-2 mt-6 flex justify-end gap-4">
