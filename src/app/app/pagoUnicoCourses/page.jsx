@@ -10,14 +10,17 @@ import Swal from 'sweetalert2';
 import { LockKeyhole, Send, Hourglass, BookOpen, Search, CheckCircle2, Bookmark } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
 
 const NOMBRE_NEGOCIO = 'DOCTEMIA MC';
 
-// El componente AccessDeniedScreen no necesita cambios
+// El componente AccessDeniedScreen corregido
 const AccessDeniedScreen = ({ user, isDark, swalTheme }) => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [requestSent, setRequestSent] = useState(false);
     const [contactInfo, setContactInfo] = useState({ qrUrl: '', adminPhone: '' });
+    const [showModal, setShowModal] = useState(false);
+    const [phoneInput, setPhoneInput] = useState('');
     
     useEffect(() => {
         const checkRequestAndLoadInfo = async () => {
@@ -38,52 +41,50 @@ const AccessDeniedScreen = ({ user, isDark, swalTheme }) => {
     }, [user]);
 
     const handleRequestAccessPopup = () => {
-        Swal.fire({
-            title: '<h3 class="text-2xl font-bold text-indigo-500">¡Solicita tu Acceso!</h3>',
-            html: `
-                <div class="text-left space-y-4 p-4 ${isDark ? 'text-gray-300' : 'text-gray-700'}">
-                    <p class="text-center">Completa el pago usando el QR y luego contáctanos por WhatsApp para una activación inmediata.</p>
-                    <div class="flex justify-center my-4">
-                        ${contactInfo.qrUrl ? `<img src="${contactInfo.qrUrl}" alt="Código QR de Pago" class="w-48 h-48 rounded-lg border-2 ${isDark ? 'border-gray-600' : 'border-gray-300'}"/>` : '<p>Código QR no disponible.</p>'}
-                    </div>
-                    <p class="text-center font-semibold">¿Ya pagaste?</p>
-                    <a id="whatsapp-link" href="https://api.whatsapp.com/send?phone=${contactInfo.adminPhone}&text=${encodeURIComponent(`Hola ${NOMBRE_NEGOCIO}, soy ${user.name || user.displayName}. Acabo de realizar el pago para el acceso a los cursos de pago único. Adjunto mi comprobante.`)}" target="_blank" class="flex items-center justify-center gap-2 w-full bg-green-500 text-white font-bold py-3 px-4 rounded-lg transition hover:bg-green-600">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path></svg>
-                        Contactar por WhatsApp
-                    </a>
-                    <div class="relative my-4">
-                        <div class="absolute inset-0 flex items-center"><span class="w-full border-t ${isDark ? 'border-gray-600' : 'border-gray-300'}"></span></div>
-                        <div class="relative flex justify-center text-xs uppercase"><span class="bg-${isDark ? 'gray-800' : 'white'} px-2 text-gray-500"> O </span></div>
-                    </div>
-                    <p class="text-center">Si prefieres, envía una solicitud y te contactaremos.</p>
-                    <input id="swal-input-phone" class="swal2-input" placeholder="Tu número de WhatsApp (ej: +591...)" type="tel">
-                </div>
-            `,
-            showCancelButton: true,
-            confirmButtonText: 'Enviar Solicitud',
-            cancelButtonText: 'Cancelar',
-            ...swalTheme,
-            customClass: { popup: isDark ? 'bg-gray-800' : 'bg-white' },
-            preConfirm: () => {
-                const phone = Swal.getPopup().querySelector('#swal-input-phone').value;
-                if (!phone) { Swal.showValidationMessage(`Por favor, ingresa tu número de WhatsApp`); }
-                return { phone };
-            }
-        }).then(async (result) => {
-            if (result.isConfirmed) {
-                setIsSubmitting(true);
-                try {
-                    await addDoc(collection(db, "pagoUnico_solicitudes"), { userId: user.uid, userName: user.name || user.displayName, userEmail: user.email, userPhone: result.value.phone, requestDate: serverTimestamp(), status: 'pendiente', type: 'pago_unico_access' });
-                    setRequestSent(true);
-                    Swal.fire({ title: '¡Solicitud Enviada!', text: 'Te contactaremos pronto.', icon: 'success', ...swalTheme });
-                } catch (error) {
-                    console.error("Error al crear solicitud:", error);
-                    Swal.fire({ title: 'Error', text: 'No se pudo enviar tu solicitud.', icon: 'error', ...swalTheme });
-                } finally {
-                    setIsSubmitting(false);
-                }
-            }
-        });
+        setShowModal(true);
+    };
+
+    const handleSubmitRequest = async () => {
+        if (!phoneInput) {
+            Swal.fire({ 
+                title: 'Error', 
+                text: 'Por favor, ingresa tu número de WhatsApp', 
+                icon: 'error', 
+                ...swalTheme 
+            });
+            return;
+        }
+
+        setIsSubmitting(true);
+        try {
+            await addDoc(collection(db, "pagoUnico_solicitudes"), { 
+                userId: user.uid, 
+                userName: user.name || user.displayName, 
+                userEmail: user.email, 
+                userPhone: phoneInput, 
+                requestDate: serverTimestamp(), 
+                status: 'pendiente', 
+                type: 'pago_unico_access' 
+            });
+            setRequestSent(true);
+            setShowModal(false);
+            Swal.fire({ 
+                title: '¡Solicitud Enviada!', 
+                text: 'Te contactaremos pronto.', 
+                icon: 'success', 
+                ...swalTheme 
+            });
+        } catch (error) {
+            console.error("Error al crear solicitud:", error);
+            Swal.fire({ 
+                title: 'Error', 
+                text: 'No se pudo enviar tu solicitud.', 
+                icon: 'error', 
+                ...swalTheme 
+            });
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     return (
@@ -98,6 +99,117 @@ const AccessDeniedScreen = ({ user, isDark, swalTheme }) => {
                     <button onClick={handleRequestAccessPopup} disabled={isSubmitting} className="inline-flex items-center gap-3 rounded-md bg-indigo-600 px-6 py-3 text-lg font-semibold text-white shadow-sm hover:bg-indigo-500 disabled:bg-gray-400">{isSubmitting ? 'Procesando...' : 'Solicitar Acceso Ahora'} <Send className="h-5 w-5" /></button>
                 )}
             </div>
+
+            {/* ✨ MODAL CUSTOM CON REACT */}
+            {showModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
+                    <div className={`relative w-full max-w-md mx-4 rounded-lg shadow-lg ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
+                        {/* Header del Modal */}
+                        <div className="flex items-center justify-between p-6 border-b">
+                            <h3 className="text-2xl font-bold text-indigo-500">¡Solicita tu Acceso!</h3>
+                            <button 
+                                onClick={() => setShowModal(false)} 
+                                className={`text-gray-400 hover:text-gray-600 ${isDark ? 'hover:text-gray-300' : ''}`}
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        {/* Contenido del Modal */}
+                        <div className="p-6 space-y-4">
+                            <p className={`text-center ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                                Completa el pago usando el QR y luego contáctanos por WhatsApp para una activación inmediata.
+                            </p>
+
+                            {/* ✨ QR CON COMPONENTE IMAGE DE NEXT.JS */}
+                            <div className="flex justify-center my-4">
+                                {contactInfo.qrUrl ? (
+                                    <div className={`w-48 h-48 rounded-lg border-2 overflow-hidden ${isDark ? 'border-gray-600' : 'border-gray-300'}`}>
+                                        <img 
+                                            src={(() => {
+                                                // Convertir URL de Google Drive a formato más confiable
+                                                if (contactInfo.qrUrl.includes('drive.google.com/uc?export=view&id=')) {
+                                                    const fileId = contactInfo.qrUrl.split('id=')[1];
+                                                    return `https://drive.google.com/thumbnail?id=${fileId}&sz=w400-h400`;
+                                                }
+                                                return contactInfo.qrUrl;
+                                            })()} 
+                                            alt="Código QR de Pago" 
+                                            className="w-full h-full object-cover"
+                                            onLoad={() => console.log('QR cargado exitosamente')}
+                                            onError={(e) => {
+                                                console.log('Error cargando QR, probando URL alternativa...');
+                                                // Si falla, probar con la URL original
+                                                if (e.target.src !== contactInfo.qrUrl) {
+                                                    e.target.src = contactInfo.qrUrl;
+                                                } else {
+                                                    // Si también falla, mostrar placeholder
+                                                    e.target.style.display = 'none';
+                                                    e.target.parentElement.innerHTML = '<div class="flex items-center justify-center h-full text-gray-500">QR no disponible</div>';
+                                                }
+                                            }}
+                                        />
+                                    </div>
+                                ) : (
+                                    <p className={`text-gray-500 ${isDark ? 'text-gray-400' : ''}`}>Código QR no disponible.</p>
+                                )}
+                            </div>
+
+                            <p className={`text-center font-semibold ${isDark ? 'text-gray-200' : 'text-gray-800'}`}>¿Ya pagaste?</p>
+
+                            {/* Botón WhatsApp */}
+                            <a 
+                                href={`https://api.whatsapp.com/send?phone=${contactInfo.adminPhone}&text=${encodeURIComponent(`Hola ${NOMBRE_NEGOCIO}, soy ${user.name || user.displayName}. Acabo de realizar el pago para el acceso a los cursos de pago único. Adjunto mi comprobante.`)}`}
+                                target="_blank"
+                                className="flex items-center justify-center gap-2 w-full bg-green-500 text-white font-bold py-3 px-4 rounded-lg transition hover:bg-green-600"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+                                </svg>
+                                Contactar por WhatsApp
+                            </a>
+
+                            {/* Separador */}
+                            <div className="relative my-4">
+                                <div className="absolute inset-0 flex items-center">
+                                    <span className={`w-full border-t ${isDark ? 'border-gray-600' : 'border-gray-300'}`}></span>
+                                </div>
+                                <div className="relative flex justify-center text-xs uppercase">
+                                    <span className={`px-2 text-gray-500 ${isDark ? 'bg-gray-800' : 'bg-white'}`}> O </span>
+                                </div>
+                            </div>
+
+                            <p className={`text-center ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>Si prefieres, envía una solicitud y te contactaremos.</p>
+
+                            {/* Input teléfono */}
+                            <input
+                                type="tel"
+                                value={phoneInput}
+                                onChange={(e) => setPhoneInput(e.target.value)}
+                                placeholder="Tu número de WhatsApp (ej: +591...)"
+                                className={`w-full px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 ${isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300'}`}
+                            />
+                        </div>
+
+                        {/* Footer del Modal */}
+                        <div className={`flex gap-3 p-6 border-t ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+                            <button 
+                                onClick={() => setShowModal(false)} 
+                                className={`flex-1 px-4 py-2 rounded-md border transition ${isDark ? 'border-gray-600 text-gray-300 hover:bg-gray-700' : 'border-gray-300 text-gray-700 hover:bg-gray-50'}`}
+                            >
+                                Cancelar
+                            </button>
+                            <button 
+                                onClick={handleSubmitRequest}
+                                disabled={isSubmitting}
+                                className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:bg-gray-400 transition"
+                            >
+                                {isSubmitting ? 'Enviando...' : 'Enviar Solicitud'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
@@ -272,7 +384,19 @@ export default function CoursesPagoUnicoPage() {
                                                                 </div>
                                                             )}
                                                             <div className="relative">
-                                                                <img src={course.imageUrl || '/placeholder.png'} alt={course.title} className="w-full h-48 object-cover" />
+                                                                {/* ✨ CAMBIO PRINCIPAL: Usar componente Image de Next.js con mejor manejo */}
+                                                                <Image 
+                                                                    src={course.imageUrl || '/placeholder.png'} 
+                                                                    alt={course.title} 
+                                                                    width={400}
+                                                                    height={192}
+                                                                    className="w-full h-48 object-cover"
+                                                                    style={{ objectFit: 'cover' }}
+                                                                    unoptimized={course.imageUrl?.includes('drive.google.com')}
+                                                                    onError={() => {
+                                                                        console.log('Error loading image:', course.imageUrl);
+                                                                    }}
+                                                                />
                                                                 {isCompleted && <div className="absolute inset-0 bg-black/30"></div>}
                                                             </div>
                                                             <div className="p-6 flex flex-col flex-grow">

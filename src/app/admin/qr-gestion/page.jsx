@@ -1,10 +1,11 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
 import { toast, Toaster } from 'react-hot-toast';
 import { useTheme } from '@/context/ThemeContext';
 import { Upload, Phone } from 'lucide-react';
+import Image from 'next/image';
 
 export default function QRGestionPage() {
     const [qrUrl, setQrUrl] = useState('');
@@ -17,7 +18,6 @@ export default function QRGestionPage() {
 
     const docRef = doc(db, 'pags', 'infoContacto');
 
-    // Cargar datos iniciales
     useEffect(() => {
         const loadContactInfo = async () => {
             try {
@@ -26,7 +26,7 @@ export default function QRGestionPage() {
                     const data = docSnap.data();
                     setQrUrl(data.qrUrl || '');
                     setAdminPhone(data.adminPhone || '');
-                    setNewAdminPhone(data.adminPhone || ''); // Pre-rellenar el campo de input
+                    setNewAdminPhone(data.adminPhone || '');
                 }
             } catch (error) {
                 console.error("Error cargando la información de contacto:", error);
@@ -38,11 +38,20 @@ export default function QRGestionPage() {
         loadContactInfo();
     }, []);
 
+    // ✨ 2. LÓGICA DE CONVERSIÓN DE URL MEJORADA
     const handleLinkChange = (e) => {
         const value = e.target.value;
         setNewQrLink(value);
-        if (value.startsWith('http')) {
-            // Simple validación de URL, para previsualización
+
+        if (value.includes('drive.google.com/file/d/')) {
+            try {
+                const id = value.split('/d/')[1].split('/')[0];
+                const directUrl = `https://drive.google.com/uc?export=view&id=${id}`;
+                setPreview(directUrl);
+            } catch {
+                setPreview('');
+            }
+        } else if (value.startsWith('http')) {
             setPreview(value);
         } else {
             setPreview('');
@@ -54,24 +63,29 @@ export default function QRGestionPage() {
             toast.error('El número de teléfono del administrador es obligatorio.');
             return;
         }
-        if(!preview){
+        if(!preview && newQrLink){ // Validar si hay un link nuevo pero la previsualización falló
             toast.error('Por favor, proporciona un enlace válido para el nuevo QR.');
             return;
         }
 
         const toastId = toast.loading('Actualizando información...');
 
+        // ✨ 3. ASEGURARSE DE GUARDAR LA URL CORRECTA (LA CONVERTIDA)
+        let finalQrUrl = newQrLink;
+        if (newQrLink.includes('drive.google.com/file/d/')) {
+            finalQrUrl = preview; // 'preview' tiene la URL directa
+        }
+
         try {
             const dataToUpdate = {
-                qrUrl: newQrLink || qrUrl, // Usa el nuevo link si existe, si no, mantiene el anterior
+                qrUrl: newQrLink ? finalQrUrl : qrUrl,
                 adminPhone: newAdminPhone
             };
 
             await setDoc(docRef, dataToUpdate, { merge: true });
 
-            // Actualizar el estado local
             if (newQrLink) {
-                setQrUrl(newQrLink);
+                setQrUrl(finalQrUrl);
             }
             setAdminPhone(newAdminPhone);
 
@@ -91,9 +105,7 @@ export default function QRGestionPage() {
 
     return (
         <div className={`max-w-2xl mx-auto p-6 rounded-xl shadow-lg mt-10 border ${isDark ? 'bg-gray-800 border-gray-700 text-white' : 'bg-white border-gray-200'}`}>
-            <Toaster position="top-right" toastOptions={{
-                className: isDark ? 'bg-gray-700 text-white' : '',
-            }}/>
+            <Toaster position="top-right" toastOptions={{ className: isDark ? 'bg-gray-700 text-white' : '' }}/>
             <h1 className="text-3xl font-bold mb-6 text-indigo-500">Gestión de Contacto y Pagos</h1>
 
             {/* Gestión del Número de Teléfono */}
@@ -102,7 +114,7 @@ export default function QRGestionPage() {
                     <Phone size={20} /> Número de WhatsApp del Admin
                 </label>
                 <p className={`text-sm mb-3 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
-                    Este número se usará para que los usuarios te contacten al solicitar acceso. Incluye el código de país (ej: +591XXXXXXXX).
+                    Este número se usará para que los usuarios te contacten. Incluye el código de país (ej: +591XXXXXXXX).
                 </p>
                 <input
                     id="adminPhone"
@@ -122,7 +134,8 @@ export default function QRGestionPage() {
                 {qrUrl && (
                     <div className="mb-4">
                         <p className="font-medium mb-2">QR Actual:</p>
-                        <img src={qrUrl} alt="QR Actual" className="w-40 h-40 rounded-lg border-2" style={{ borderColor: isDark ? '#4b5563' : '#d1d5db' }} />
+                        {/* ✨ 4. USAR EL COMPONENTE IMAGE */}
+                        <Image src={qrUrl} alt="QR Actual" width={160} height={160} className="rounded-lg border-2" style={{ borderColor: isDark ? '#4b5563' : '#d1d5db' }} />
                     </div>
                 )}
                 <label htmlFor="newQrLink" className="block font-medium mb-1">
@@ -141,14 +154,15 @@ export default function QRGestionPage() {
             {preview && (
                 <div className="mb-6">
                     <p className="text-sm mb-2">Previsualización del nuevo QR:</p>
-                    <img src={preview} alt="Previsualización" className="w-40 h-40 border rounded-lg" style={{ borderColor: isDark ? '#4b5563' : '#d1d5db' }} />
+                    {/* ✨ 4. USAR EL COMPONENTE IMAGE */}
+                    <Image src={preview} alt="Previsualización" width={160} height={160} className="border rounded-lg" style={{ borderColor: isDark ? '#4b5563' : '#d1d5db' }} />
                 </div>
             )}
 
             <button
                 onClick={handleUpdateInfo}
                 className="w-full text-white px-6 py-3 rounded-lg transition bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-400 font-bold"
-                disabled={!newAdminPhone}
+                disabled={!newAdminPhone || (newQrLink && !preview)}
             >
                 Guardar Cambios
             </button>
