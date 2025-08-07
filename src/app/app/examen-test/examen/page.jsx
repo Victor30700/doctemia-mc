@@ -68,13 +68,45 @@ function ExamenContent() {
 
     const answersWithDetails = examData.questions.map((q, i) => {
       const userAnswer = userAnswers[i];
-      const isCorrect = q.type === 'multiple-choice' ? userAnswer.selectedOptionIndex === q.correctOptionIndex : null;
-      if (isCorrect) correctCount++;
+      let isCorrect = null;
+      
+      if (q.type === 'multiple-choice') {
+        // Verificar si la respuesta del usuario coincide con alguna de las opciones correctas
+        if (q.correctOptionIndices && q.correctOptionIndices.length > 1) {
+          // Nueva lógica para múltiples opciones correctas (más de una)
+          if (userAnswer.selectedOptionIndices && userAnswer.selectedOptionIndices.length > 0) {
+            // Verificar si seleccionó todas las opciones correctas y ninguna incorrecta
+            const userSelected = userAnswer.selectedOptionIndices.sort();
+            const correctSelected = q.correctOptionIndices.sort();
+            isCorrect = userSelected.length === correctSelected.length && 
+                       userSelected.every((idx, pos) => idx === correctSelected[pos]);
+          } else {
+            isCorrect = false;
+          }
+        } else if (q.correctOptionIndices && q.correctOptionIndices.length === 1) {
+          // Una sola opción correcta usando correctOptionIndices
+          isCorrect = userAnswer.selectedOptionIndex === q.correctOptionIndices[0];
+        } else {
+          // Lógica original para una sola opción correcta usando correctOptionIndex
+          isCorrect = userAnswer.selectedOptionIndex === q.correctOptionIndex;
+        }
+        
+        if (isCorrect) correctCount++;
+      }
       
       return {
-        questionIndex: i, questionText: q.questionText, type: q.type, options: q.options || [],
-        correctOptionIndex: q.correctOptionIndex, correctAnswer: q.correctAnswer || '',
-        selectedOptionIndex: userAnswer.selectedOptionIndex, textAnswer: userAnswer.textAnswer, isCorrect: isCorrect,
+        questionIndex: i, 
+        questionText: q.questionText, 
+        type: q.type, 
+        options: q.options || [],
+        correctOptionIndex: q.correctOptionIndex, 
+        correctOptionIndices: q.correctOptionIndices || [],
+        correctAnswer: q.correctAnswer || '',
+        explanation: q.explanation || '',
+        selectedOptionIndex: userAnswer.selectedOptionIndex, 
+        selectedOptionIndices: userAnswer.selectedOptionIndices || [],
+        textAnswer: userAnswer.textAnswer, 
+        isCorrect: isCorrect,
       };
     });
 
@@ -84,8 +116,14 @@ function ExamenContent() {
 
     try {
       await addDoc(collection(db, 'examAttempts'), {
-        examId: examData.id, userId: auth.currentUser.uid, userEmail: auth.currentUser.email,
-        startedAt: startTime, completedAt: serverTimestamp(), answers: userAnswers, score, resultStatus
+        examId: examData.id, 
+        userId: auth.currentUser.uid, 
+        userEmail: auth.currentUser.email,
+        startedAt: startTime, 
+        completedAt: serverTimestamp(), 
+        answers: userAnswers, 
+        score, 
+        resultStatus
       });
       setExamFinished(true);
     } catch (err) {
@@ -114,7 +152,10 @@ function ExamenContent() {
         setExamData({ id: snap.id, ...data });
         setUserAnswers(
           Array(data.questions.length).fill(null).map((_, i) => ({
-            questionIndex: i, selectedOptionIndex: null, textAnswer: ''
+            questionIndex: i, 
+            selectedOptionIndex: null, 
+            selectedOptionIndices: [], // Para múltiples opciones
+            textAnswer: ''
           }))
         );
         setStartTime(Timestamp.now());
@@ -129,12 +170,27 @@ function ExamenContent() {
     loadExam();
   }, [examId, router]);
 
-  const handleAnswerChange = (index, value) => {
+  const handleAnswerChange = (index, value, isMultiple = false) => {
     const questionType = examData.questions[index].type;
     setUserAnswers(ans =>
       ans.map(a => {
         if (a.questionIndex === index) {
-          return questionType === 'open-ended' ? { ...a, textAnswer: value } : { ...a, selectedOptionIndex: value };
+          if (questionType === 'open-ended') {
+            return { ...a, textAnswer: value };
+          } else if (isMultiple) {
+            // Manejo de múltiples opciones
+            const currentIndices = a.selectedOptionIndices || [];
+            let newIndices;
+            if (currentIndices.includes(value)) {
+              newIndices = currentIndices.filter(idx => idx !== value);
+            } else {
+              newIndices = [...currentIndices, value].sort((a, b) => a - b);
+            }
+            return { ...a, selectedOptionIndices: newIndices, selectedOptionIndex: newIndices.length > 0 ? newIndices[0] : null };
+          } else {
+            // Manejo de opción única
+            return { ...a, selectedOptionIndex: value, selectedOptionIndices: [value] };
+          }
         }
         return a;
       })
@@ -145,7 +201,14 @@ function ExamenContent() {
       const answer = userAnswers[index];
       if (!answer) return false;
       const question = examData.questions[index];
-      if (question.type === 'multiple-choice') return answer.selectedOptionIndex !== null;
+      if (question.type === 'multiple-choice') {
+        // Verificar si tiene múltiples opciones correctas configuradas (más de una)
+        if (question.correctOptionIndices && question.correctOptionIndices.length > 1) {
+          return answer.selectedOptionIndices && answer.selectedOptionIndices.length > 0;
+        } else {
+          return answer.selectedOptionIndex !== null;
+        }
+      }
       if (question.type === 'open-ended') return answer.textAnswer.trim() !== '';
       return false;
   };
@@ -155,10 +218,16 @@ function ExamenContent() {
 
       if (unansweredCount > 0) {
           const result = await Swal.fire({
-              title: '¿Estás seguro?', text: `Tienes ${unansweredCount} pregunta(s) sin responder. ¿Deseas enviar de todas formas?`,
-              icon: 'warning', showCancelButton: true, confirmButtonColor: '#3085d6', cancelButtonColor: '#d33',
-              confirmButtonText: 'Sí, enviar', cancelButtonText: 'Volver',
-              background: isDark ? '#1f2937' : '#fff', color: isDark ? '#f9fafb' : '#111827'
+              title: '¿Estás seguro?', 
+              text: `Tienes ${unansweredCount} pregunta(s) sin responder. ¿Deseas enviar de todas formas?`,
+              icon: 'warning', 
+              showCancelButton: true, 
+              confirmButtonColor: '#3085d6', 
+              cancelButtonColor: '#d33',
+              confirmButtonText: 'Sí, enviar', 
+              cancelButtonText: 'Volver',
+              background: isDark ? '#1f2937' : '#fff', 
+              color: isDark ? '#f9fafb' : '#111827'
           });
           if (!result.isConfirmed) return;
       }
@@ -194,15 +263,37 @@ function ExamenContent() {
                     </div>
                 </div>
               ) : (
-                <ul className="space-y-1 text-sm">
-                  {item.options.map((opt, oi) => (
-                      <li key={oi} className={`pl-2 ${ item.correctOptionIndex === oi ? 'font-bold text-green-600 dark:text-green-400' : (item.selectedOptionIndex === oi ? 'font-normal text-red-600 dark:text-red-400' : 'text-gray-700 dark:text-gray-400')}`}>
-                          {String.fromCharCode(97 + oi)}) {opt}
-                          {item.selectedOptionIndex === oi && item.correctOptionIndex !== oi && <span className='text-xs ml-2'>(Tu respuesta)</span>}
-                          {item.correctOptionIndex === oi && <span className='text-xs ml-2'>(Correcta)</span>}
-                      </li>
-                  ))}
-                </ul>
+                <div>
+                  <ul className="space-y-1 text-sm mb-3">
+                    {item.options.map((opt, oi) => {
+                      const isUserSelected = item.selectedOptionIndices ? item.selectedOptionIndices.includes(oi) : item.selectedOptionIndex === oi;
+                      const isCorrectOption = item.correctOptionIndices && item.correctOptionIndices.length > 0 
+                        ? item.correctOptionIndices.includes(oi) 
+                        : item.correctOptionIndex === oi;
+                      
+                      let optionClass = 'text-gray-700 dark:text-gray-400';
+                      if (isCorrectOption) {
+                        optionClass = 'font-bold text-green-600 dark:text-green-400';
+                      } else if (isUserSelected) {
+                        optionClass = 'font-normal text-red-600 dark:text-red-400';
+                      }
+                      
+                      return (
+                        <li key={oi} className={`pl-2 ${optionClass}`}>
+                            {String.fromCharCode(97 + oi)}) {opt}
+                            {isUserSelected && !isCorrectOption && <span className='text-xs ml-2'>(Tu respuesta)</span>}
+                            {isCorrectOption && <span className='text-xs ml-2'>(Correcta)</span>}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                  {item.explanation && (
+                    <div className={`mt-3 p-3 rounded-lg ${isDark ? 'bg-gray-700' : 'bg-gray-100'}`}>
+                      <h4 className={`text-sm font-bold mb-1 ${isDark ? 'text-yellow-400' : 'text-yellow-600'}`}>Explicación:</h4>
+                      <p className="text-sm">{item.explanation}</p>
+                    </div>
+                  )}
+                </div>
               )}
             </div>
           ))}
@@ -216,6 +307,10 @@ function ExamenContent() {
 
   const question = examData.questions[currentQuestionIndex];
   const answer = userAnswers[currentQuestionIndex];
+  // CAMBIO CLAVE: Solo mostrar múltiples respuestas cuando hay MÁS de una respuesta correcta
+  const hasMultipleCorrectOptions = question.type === 'multiple-choice' && 
+                                   question.correctOptionIndices && 
+                                   question.correctOptionIndices.length > 1;
 
   return (
     <div className={`min-h-screen flex flex-col md:flex-row p-4 gap-4 ${isDark ? 'bg-gray-900 text-gray-100' : 'bg-gray-100 text-gray-900'}`}>
@@ -256,6 +351,14 @@ function ExamenContent() {
                 </p>
                 <div className={`p-6 rounded-lg ${isDark ? 'bg-gray-900' : 'bg-gray-50'}`}>
                     <h3 className="font-semibold mb-4 text-xl leading-relaxed">{question.questionText}</h3>
+                    {/* SOLO mostrar el mensaje cuando hasMultipleCorrectOptions sea true (más de 1 respuesta correcta) */}
+                    {hasMultipleCorrectOptions && (
+                      <div className={`mb-4 p-3 rounded-lg ${isDark ? 'bg-blue-900/30' : 'bg-blue-50'}`}>
+                        <p className={`text-sm font-medium ${isDark ? 'text-blue-300' : 'text-blue-700'}`}>
+                          💡 Esta pregunta puede tener múltiples respuestas correctas. Selecciona todas las que apliquen.
+                        </p>
+                      </div>
+                    )}
                     {question.type === 'open-ended' ? (
                         <textarea
                             value={answer.textAnswer}
@@ -266,14 +369,26 @@ function ExamenContent() {
                         />
                     ) : (
                         <ul className="space-y-3">
-                        {question.options.map((opt, i) => (
+                        {question.options.map((opt, i) => {
+                          const isSelected = hasMultipleCorrectOptions 
+                            ? (answer.selectedOptionIndices && answer.selectedOptionIndices.includes(i))
+                            : (answer.selectedOptionIndex === i);
+                          
+                          return (
                             <li key={i}>
-                                <label className={`flex items-center space-x-4 p-4 rounded-lg cursor-pointer transition-all border-2 ${answer.selectedOptionIndex === i ? (isDark ? 'bg-blue-900/50 border-blue-500' : 'bg-blue-100 border-blue-500') : (isDark ? 'bg-gray-700 border-transparent hover:border-gray-500' : 'bg-gray-100 border-transparent hover:border-gray-300')}`}>
-                                    <input type="radio" name={`q-${currentQuestionIndex}`} checked={answer.selectedOptionIndex === i} onChange={() => handleAnswerChange(currentQuestionIndex, i)} className="h-5 w-5 flex-shrink-0 text-blue-600 focus:ring-blue-500 border-gray-300" />
+                                <label className={`flex items-center space-x-4 p-4 rounded-lg cursor-pointer transition-all border-2 ${isSelected ? (isDark ? 'bg-blue-900/50 border-blue-500' : 'bg-blue-100 border-blue-500') : (isDark ? 'bg-gray-700 border-transparent hover:border-gray-500' : 'bg-gray-100 border-transparent hover:border-gray-300')}`}>
+                                    <input 
+                                      type={hasMultipleCorrectOptions ? "checkbox" : "radio"} 
+                                      name={hasMultipleCorrectOptions ? undefined : `q-${currentQuestionIndex}`}
+                                      checked={isSelected}
+                                      onChange={() => handleAnswerChange(currentQuestionIndex, i, hasMultipleCorrectOptions)} 
+                                      className="h-5 w-5 flex-shrink-0 text-blue-600 focus:ring-blue-500 border-gray-300" 
+                                    />
                                     <span className="text-base">{opt}</span>
                                 </label>
                             </li>
-                        ))}
+                          );
+                        })}
                         </ul>
                     )}
                 </div>

@@ -5,8 +5,9 @@ import { useRouter } from 'next/navigation';
 import { signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '../../lib/firebase'; // Asegúrate que la ruta sea correcta
 import Swal from 'sweetalert2';
-import Image from 'next/image'; // Importar el componente Image de Next.js
+import Image from 'next/image';
 
+// --- COMPONENTE PRINCIPAL DEL LOGIN ---
 export default function LoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState('');
@@ -18,71 +19,69 @@ export default function LoginPage() {
     setLoading(true);
 
     try {
-      // 1. Autenticar con Firebase en el cliente
       const userCredential = await signInWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
-
-      // 2. Obtener el ID Token del usuario
-      const idToken = await user.getIdToken(true); // Forzar refresco para obtener claims actualizados
-
-      // 3. Llamar a la API backend para verificar estado, rol y establecer cookies
+      const idToken = await user.getIdToken(true);
       const response = await fetch('/api/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${idToken}`, // Enviar token en el header (opcional, pero buena práctica)
+          'Authorization': `Bearer ${idToken}`,
         },
-        body: JSON.stringify({ token: idToken }), // O enviar solo en el body
+        body: JSON.stringify({ token: idToken }),
       });
-
       const data = await response.json();
-
       if (!response.ok) {
-        // La API retornó un error (ej: usuario inactivo, no encontrado, token inválido)
         throw new Error(data.error || 'Error en el servidor durante el login');
       }
 
-      // 4. Si la API fue exitosa (usuario activo, cookies establecidas)
-      // await Swal.fire({
-      //   icon: 'success',
-      //   title: '¡Bienvenido!',
-      //   text: 'Has iniciado sesión correctamente.',
-      //   timer: 1200,
-      //   showConfirmButton: false,
-      //   background: '#1f2937', // Fondo oscuro para la alerta
-      //   color: '#f9fafb', // Texto claro para la alerta
-      //   confirmButtonColor: '#3b82f6',
-      // });
+      // --- IMPLEMENTACIÓN DE SWEETALERT2 PARA CONFIRMACIÓN ---
+      await Swal.fire({
+        title: '¡Inicio de sesión exitoso!',
+        text: 'Serás redirigido en breve.',
+        icon: 'success',
+        timer: 2000, // La alerta se cierra automáticamente después de 2 segundos
+        timerProgressBar: true,
+        background: '#C1E8FF',
+        color: '#021024',
+        showConfirmButton: false, // Oculta el botón de confirmación
+        customClass: {
+          popup: 'rounded-2xl border border-gray-300',
+        }
+      });
 
-      // 5. Redirigir basado en el rol devuelto por la API
       router.replace(data.role === 'admin' ? '/admin' : '/app');
 
     } catch (err) {
-      // Captura errores de Firebase Auth o de la llamada a la API
       let errorMessage = 'Ocurrió un error inesperado.';
-      if (err.code) { // Error de Firebase Auth
+      if (err.code) {
         switch (err.code) {
           case 'auth/user-not-found':
           case 'auth/wrong-password':
-          case 'auth/invalid-credential': // Nueva versión de Firebase SDK
+          case 'auth/invalid-credential':
             errorMessage = 'Correo o contraseña incorrectos.';
             break;
           case 'auth/invalid-email':
             errorMessage = 'El formato del correo es inválido.';
             break;
           default:
-            errorMessage = 'Error de autenticación: ' + err.message;
+            errorMessage = 'Error de autenticación. Por favor, intente de nuevo.';
         }
-      } else { // Error de la API u otro error
+      } else {
         errorMessage = err.message;
       }
+      // Alerta de error con el estilo personalizado
       await Swal.fire({
-        title: 'Error de Inicio de Sesión',
+        title: 'Error',
         text: errorMessage,
         icon: 'error',
-        background: '#1f2937', // Fondo oscuro para la alerta
-        color: '#f9fafb', // Texto claro para la alerta
-        confirmButtonColor: '#3b82f6',
+        background: '#C1E8FF',
+        color: '#021024',
+        confirmButtonText: 'Entendido',
+        confirmButtonColor: '#052659',
+        customClass: {
+          popup: 'rounded-2xl border border-gray-300',
+        }
       });
     } finally {
       setLoading(false);
@@ -94,108 +93,129 @@ export default function LoginPage() {
   };
 
   return (
-    // Contenedor principal con el fondo de imagen y altura completa
-    <div
-      className="relative flex flex-col items-center justify-center min-h-screen bg-cover bg-center"
-      style={{ backgroundImage: "url('/images/fondoLogin.png')" }}
-    >
-      {/* Overlay oscuro para mejorar la legibilidad del contenido */}
-      <div className="absolute inset-0 bg-black opacity-60 z-0"></div>
+    <>
+      {/* Estilos para la animación de entrada y el subrayado del input */}
+      <style jsx global>{`
+        @keyframes slideInFromLeft {
+          from { transform: translateX(-50px); opacity: 0; }
+          to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes slideInFromRight {
+          from { transform: translateX(50px); opacity: 0; }
+          to { transform: translateX(0); opacity: 1; }
+        }
+        .animate-slideInLeft {
+          animation: slideInFromLeft 0.7s ease-out forwards;
+        }
+        .animate-slideInRight {
+          animation: slideInFromRight 0.7s ease-out forwards;
+        }
+        .input-underline::after {
+          content: '';
+          position: absolute;
+          left: 0;
+          bottom: 0;
+          width: 100%;
+          height: 2px;
+          background-color: #C1E8FF; /* Color base del subrayado */
+          transform: scaleX(0);
+          transform-origin: left;
+          transition: transform 0.4s ease-out;
+        }
+        .input-wrapper:focus-within .input-underline::after {
+          transform: scaleX(1);
+          background-image: linear-gradient(to right, #7DA0CA, #5483B3); /* Gradiente al hacer foco */
+        }
+      `}</style>
 
-      {/* Contenido principal: Logo, Formulario y Texto de Bienvenida */}
-      <div className="relative z-10 w-full h-full flex flex-col md:flex-row items-center justify-center p-4 md:p-8 lg:p-12 max-w-screen-xl mx-auto">
-        
-        {/* Sección Izquierda: Formulario de Login */}
-        <div className="bg-gray-900/80 p-6 sm:p-8 rounded-xl shadow-2xl w-full max-w-sm md:max-w-md border border-purple-700/50 transform transition-transform duration-300 hover:scale-105 md:mr-8 lg:mr-16 mb-8 md:mb-0"
-             style={{boxShadow: '0 0 30px rgba(128, 0, 128, 0.5), 0 0 60px rgba(79, 70, 229, 0.3)'}}>
+      <main className="flex items-center justify-center min-h-screen bg-[#C1E8FF]/40 p-4 md:p-8">
+        <div className="relative w-full max-w-4xl flex rounded-2xl shadow-2xl overflow-hidden">
           
-          {/* Logo del sistema dentro del formulario */}
-          <div className="text-center mb-6">
-            <Image
-              src="/icons/1-oscuro.png" // Logo para modo oscuro (letras claras)
-              alt="DOCTEMIA MC Logo"
-              width={160}
-              height={48}
-              priority
-              className="mx-auto"
-            />
-          </div>
-
-          
-
-          <form onSubmit={handleSubmit} className="space-y-5">
-            <div>
-              <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-1">
-                Correo electrónico
-              </label>
-              <input
-                id="email"
-                type="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                required
-                className="mt-1 w-full p-3.5 border border-purple-600/50 rounded-lg bg-gray-800 text-white placeholder-gray-400 focus:ring-purple-500 focus:border-purple-500 transition duration-200 ease-in-out"
-                placeholder="correo@example.com"
-              />
-            </div>
-
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-gray-300 mb-1">
-                Contraseña
-              </label>
-              <input
-                id="password"
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                required
-                className="mt-1 w-full p-3.5 border border-purple-600/50 rounded-lg bg-gray-800 text-white placeholder-gray-400 focus:ring-purple-500 focus:border-purple-500 transition duration-200 ease-in-out"
-                placeholder="password"
-              />
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-700 hover:to-indigo-700 text-white font-bold py-3.5 rounded-full shadow-lg transition duration-200 ease-in-out transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed"
-              style={{boxShadow: '0 5px 15px rgba(128, 0, 128, 0.4)'}}
-            >
-              {loading ? 'Cargando...' : 'Ingresar'}
-            </button>
-          </form>
-
-          <div className="text-center mt-5">
-            <p className="text-sm text-gray-400">
-              ¿No tienes cuenta?{' '}
-              <button
-                type="button"
-                onClick={goToRegister}
-                className="font-medium text-purple-400 hover:underline hover:text-purple-300 transition duration-200 ease-in-out"
-              >
-                Regístrate
-              </button>
+          {/* --- PANEL IZQUIERDO: Información --- */}
+          <div className="hidden md:flex flex-col justify-center w-1/2 p-12 bg-[#052659] text-white animate-slideInLeft">
+            <h1 className="text-5xl font-bold text-[#C1E8FF] mb-4">
+              Bienvenido de Nuevo
+            </h1>
+            <p className="text-[#7DA0CA]">
+              Inicia sesión para gestionar tus clases y todas tus actividades.
             </p>
           </div>
-        </div>
 
-        {/* Sección Derecha: Texto de Bienvenida */}
-        <div className="flex flex-col items-center md:items-start text-center md:text-left">
-          <h2 className="text-4xl md:text-5xl font-extrabold text-white mb-4 leading-tight">
-            Iniciar sesion
-          </h2>
-          <h1 className="text-2xl font-extrabold text-center text-white mb-6 tracking-wide">
-            Welcome
-          </h1>
-          <button
-            type="button"
-            onClick={goToRegister} // Reutilizamos goToRegister para el botón "Sign up now"
-            className="px-8 py-3 bg-gradient-to-r from-blue-600 to-cyan-500 text-white font-bold rounded-full shadow-lg hover:from-blue-700 hover:to-cyan-600 transition duration-200 ease-in-out transform hover:scale-105"
-            style={{boxShadow: '0 5px 15px rgba(59, 130, 246, 0.4)'}}
-          >
-            Regístrate ahora
-          </button>
+          {/* --- PANEL DERECHO: Formulario --- */}
+          <div className="w-full md:w-1/2 p-8 sm:p-12 bg-white text-[#052659] animate-slideInRight">
+            <div className="text-center mb-8">
+              <Image
+                src="/icons/1.png"
+                alt="DOCTEMIA MC Logo"
+                width={350}
+                height={80}
+                priority
+                className="mx-auto"
+              />
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-10">
+              {/* Campo de Email con etiqueta y subrayado animado */}
+              <div className="relative input-wrapper">
+                <label htmlFor="email" className="block text-sm font-medium text-[#5483B3] mb-1">
+                  Correo electrónico
+                </label>
+                <input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="w-full bg-transparent border-b-2 border-gray-300 pb-2 outline-none text-[#052659] transition-colors duration-300 focus:border-transparent"
+                />
+                <span className="input-underline"></span>
+              </div>
+
+              {/* Campo de Contraseña con etiqueta y subrayado animado */}
+              <div className="relative input-wrapper">
+                <label htmlFor="password" className="block text-sm font-medium text-[#5483B3] mb-1">
+                  Contraseña
+                </label>
+                <input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="w-full bg-transparent border-b-2 border-gray-300 pb-2 outline-none text-[#052659] transition-colors duration-300 focus:border-transparent"
+                />
+                <span className="input-underline"></span>
+              </div>
+
+              {/* Botón de Ingresar */}
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full font-bold py-3 rounded-lg shadow-lg transition-all duration-300 transform hover:scale-105 hover:shadow-blue-400/30 disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100"
+                style={{
+                  background: 'linear-gradient(to right, #005bb6ff, #7DA0CA)',
+                  color: '#C1E8FF',
+                }}
+              >
+                {loading ? 'Verificando...' : 'Ingresar'}
+              </button>
+            </form>
+
+            <div className="text-center mt-8">
+              <p className="text-sm text-[#5483B3]">
+                ¿Aún no tienes una cuenta?{' '}
+                <button
+                  type="button"
+                  onClick={goToRegister}
+                  className="font-semibold text-[#052659] hover:text-[#021024] transition-colors duration-300"
+                >
+                  Regístrate
+                </button>
+              </p>
+            </div>
+          </div>
         </div>
-      </div>
-    </div>
+      </main>
+    </>
   );
 }
