@@ -9,6 +9,26 @@ import { updatePassword, EmailAuthProvider, reauthenticateWithCredential } from 
 import { useAuth } from '@/context/AuthContext'; // Para obtener el usuario autenticado
 import { useTheme } from '@/context/ThemeContext'; // Para el tema oscuro/claro
 
+const convertGoogleDriveUrl = (url) => {
+  if (!url) return '/icons/user.jpg';
+  
+  // Si ya es una URL de visualización directa, la devolvemos tal como está
+  if (url.includes('drive.google.com/uc?') || url.includes('drive.google.com/thumbnail?')) {
+    return url;
+  }
+  
+  // Convertir URL de formato /view a formato de visualización directa
+  const fileIdMatch = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+  if (fileIdMatch) {
+    const fileId = fileIdMatch[1];
+    // Usar el formato de thumbnail que funciona mejor para imágenes públicas
+    return `https://drive.google.com/thumbnail?id=${fileId}&sz=w400`;
+  }
+  
+  // Si no es una URL de Google Drive, la devolvemos tal como está
+  return url;
+};
+
 export default function AdminEditProfilePage() {
   const router = useRouter();
   const { user: authUser, refreshUserData } = useAuth(); // Obtener el usuario autenticado
@@ -91,7 +111,7 @@ export default function AdminEditProfilePage() {
     const { name, value } = e.target;
     setForm(prev => ({ ...prev, [name]: value }));
     if (name === 'photoURL') {
-      setImagePreview(value);
+      setImagePreview(convertGoogleDriveUrl(value)); // Convertir URL de Google Drive
       setImageError(false); // Resetear error al cambiar URL
     }
   };
@@ -286,7 +306,7 @@ export default function AdminEditProfilePage() {
                 <div className="mt-2 text-center">
                   <p className="text-sm mb-1" style={labelStyle}>Vista Previa:</p>
                   <img 
-                    src={imagePreview} 
+                    src={convertGoogleDriveUrl(imagePreview)} 
                     alt="Vista previa de la foto de perfil" 
                     className="w-32 h-32 object-cover rounded-full mx-auto border-2" 
                     style={{borderColor: isDark ? '#374151' : '#d1d5db'}}

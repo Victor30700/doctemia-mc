@@ -1,4 +1,5 @@
 'use client';
+
 import { useState, useEffect, useMemo } from 'react';
 import Link from 'next/link';
 import { onSnapshot, deleteDoc, doc, collection } from 'firebase/firestore';
@@ -6,13 +7,34 @@ import { db } from '@/lib/firebase';
 import { singlePaymentCoursesCollectionRef } from '@/lib/db';
 import { useTheme } from '@/context/ThemeContext';
 import Swal from 'sweetalert2';
-import { PlusIcon, SearchIcon, Tags } from 'lucide-react';
+import { PlusIcon, SearchIcon, Tags, Eye, Edit, Trash2 } from 'lucide-react';
+
+// Función para convertir URL de Google Drive a formato de visualización directa
+const convertGoogleDriveUrl = (url) => {
+  if (!url) return '/placeholder.png';
+  
+  // Si ya es una URL de visualización directa, la devolvemos tal como está
+  if (url.includes('drive.google.com/uc?') || url.includes('drive.google.com/thumbnail?')) {
+    return url;
+  }
+  
+  // Convertir URL de formato /view a formato de visualización directa
+  const fileIdMatch = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+  if (fileIdMatch) {
+    const fileId = fileIdMatch[1];
+    // Usar el formato de thumbnail que funciona mejor para imágenes públicas
+    return `https://drive.google.com/thumbnail?id=${fileId}&sz=w400`;
+  }
+  
+  // Si no es una URL de Google Drive, la devolvemos tal como está
+  return url;
+};
 
 export default function AdminSinglePaymentCoursesPage() {
   const [courses, setCourses] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
-  
+ 
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('all');
   const [filterMonth, setFilterMonth] = useState('all');
@@ -37,7 +59,7 @@ export default function AdminSinglePaymentCoursesPage() {
       const fetchedCategories = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
       setCategories(fetchedCategories);
     });
-    
+   
     const timer = setTimeout(() => setLoading(false), 500);
 
     return () => {
@@ -53,12 +75,12 @@ export default function AdminSinglePaymentCoursesPage() {
     const filtered = courses.filter(course => {
       const categoryName = categoryMap.get(course.categoryId)?.toLowerCase() || '';
       const courseMonth = course.createdAt?.toDate().toISOString().slice(0, 7);
-      
+     
       const matchesSearch = searchTerm === '' ||
         (course.title?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
         (course.description?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
         categoryName.includes(searchTerm.toLowerCase());
-      
+     
       const matchesCategory = filterCategory === 'all' || (course.categoryId || 'null') === filterCategory;
       const matchesMonth = filterMonth === 'all' || courseMonth === filterMonth;
 
@@ -78,7 +100,7 @@ export default function AdminSinglePaymentCoursesPage() {
       if (!groups[capitalizedMonthYear][categoryName]) groups[capitalizedMonthYear][categoryName] = [];
       groups[capitalizedMonthYear][categoryName].push(course);
     });
-    
+   
     return groups;
   }, [courses, categories, searchTerm, filterCategory, filterMonth]);
 
@@ -175,7 +197,14 @@ export default function AdminSinglePaymentCoursesPage() {
                               <td className="px-6 py-4 whitespace-nowrap">
                                 <div className="flex items-center">
                                   <div className="flex-shrink-0 h-10 w-10">
-                                    <img className="h-10 w-10 rounded-full object-cover" src={course.imageUrl || '/placeholder.png'} alt={course.title || 'Imagen del curso'} />
+                                    <img 
+                                      className="h-10 w-10 rounded-full object-cover" 
+                                      src={convertGoogleDriveUrl(course.imageUrl) || '/placeholder.png'} 
+                                      alt={course.title || 'Imagen del curso'}
+                                      onError={(e) => {
+                                        e.target.src = '/placeholder.png';
+                                      }}
+                                    />
                                   </div>
                                   <div className="ml-4">
                                     <div className={`text-sm font-medium ${isDark ? 'text-white' : 'text-gray-900'}`}>{course.title}</div>
@@ -183,10 +212,33 @@ export default function AdminSinglePaymentCoursesPage() {
                                 </div>
                               </td>
                               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">{course.modules?.length || 0}</td>
-                              <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-4">
-                                <Link href={`/admin/Cursos_Pago_Unico/preview/${course.id}`} className="text-blue-600 hover:text-blue-900 dark:text-blue-400">Preview</Link>
-                                <Link href={`/admin/Cursos_Pago_Unico/edit/${course.id}`} className="text-indigo-600 hover:text-indigo-900 dark:text-indigo-400">Editar</Link>
-                                <button onClick={() => handleDelete(course.id)} className="text-red-600 hover:text-red-900 dark:text-red-400">Eliminar</button>
+                              <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                                <div className="flex justify-end items-center gap-3">
+                                  <Link 
+                                    href={`/admin/Cursos_Pago_Unico/preview/${course.id}`} 
+                                    className="inline-flex items-center gap-1 px-3 py-1 text-xs font-medium text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 bg-blue-50 hover:bg-blue-100 dark:bg-blue-900/20 dark:hover:bg-blue-900/30 rounded-full transition-colors duration-200"
+                                    title="Vista previa"
+                                  >
+                                    <Eye className="h-3 w-3" />
+                                    <span>Preview</span>
+                                  </Link>
+                                  <Link 
+                                    href={`/admin/Cursos_Pago_Unico/edit/${course.id}`} 
+                                    className="inline-flex items-center gap-1 px-3 py-1 text-xs font-medium text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/20 dark:hover:bg-indigo-900/30 rounded-full transition-colors duration-200"
+                                    title="Editar curso"
+                                  >
+                                    <Edit className="h-3 w-3" />
+                                    <span>Editar</span>
+                                  </Link>
+                                  <button 
+                                    onClick={() => handleDelete(course.id)} 
+                                    className="inline-flex items-center gap-1 px-3 py-1 text-xs font-medium text-red-600 hover:text-red-800 dark:text-red-400 dark:hover:text-red-300 bg-red-50 hover:bg-red-100 dark:bg-red-900/20 dark:hover:bg-red-900/30 rounded-full transition-colors duration-200"
+                                    title="Eliminar curso"
+                                  >
+                                    <Trash2 className="h-3 w-3" />
+                                    <span>Eliminar</span>
+                                  </button>
+                                </div>
                               </td>
                             </tr>
                           ))}

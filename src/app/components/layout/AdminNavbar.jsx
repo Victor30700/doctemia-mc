@@ -13,6 +13,26 @@ import {
   Star, ShoppingBag, Tags, KeyRound
 } from 'lucide-react';
 
+const convertGoogleDriveUrl = (url) => {
+  if (!url) return '/icons/user.jpg';
+  
+  // Si ya es una URL de visualización directa, la devolvemos tal como está
+  if (url.includes('drive.google.com/uc?') || url.includes('drive.google.com/thumbnail?')) {
+    return url;
+  }
+  
+  // Convertir URL de formato /view a formato de visualización directa
+  const fileIdMatch = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+  if (fileIdMatch) {
+    const fileId = fileIdMatch[1];
+    // Usar el formato de thumbnail que funciona mejor para imágenes públicas
+    return `https://drive.google.com/thumbnail?id=${fileId}&sz=w400`;
+  }
+  
+  // Si no es una URL de Google Drive, la devolvemos tal como está
+  return url;
+};
+
 export default function AdminNavbar({ children }) {
   const { signOut, user } = useAuth();
   const pathname = usePathname();
@@ -185,7 +205,7 @@ export default function AdminNavbar({ children }) {
           {/* ✅ CAMBIO: Foto de perfil y botón de cerrar sesión en el header (solo para desktop) */}
           {!isMobile && user && (
             <Link href="/admin/profile" className="flex items-center gap-2 cursor-pointer">
-              <img src={user.photoURL || "/icons/user.jpg"} alt="user" className={`w-8 h-8 rounded-full border-2 ${isDark ? 'border-gray-600' : 'border-gray-200'}`} />
+              <img src={convertGoogleDriveUrl(user.photoURL)} alt="user" className={`w-8 h-8 rounded-full border-2 ${isDark ? 'border-gray-600' : 'border-gray-200'}`} />
               <button onClick={signOut} className={`px-4 py-2 text-white rounded-lg font-medium transition-all duration-200 ${isDark ? 'bg-blue-500 hover:bg-blue-600' : 'bg-blue-600 hover:bg-blue-700'}`}>
                 Cerrar sesión
               </button>
@@ -227,7 +247,7 @@ export default function AdminNavbar({ children }) {
           <div className={`border-t p-2 ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
             {/* ✅ CAMBIO: Contenedor clicable para la foto y el nombre */}
             <Link href="/admin/profile" className={`flex items-center transition-all duration-300 cursor-pointer group ${isSidebarOpen ? 'flex-row gap-3' : 'flex-col gap-2'}`}>
-              <img src={user.photoURL || "/icons/user.jpg"} alt="user" className={`rounded-full border-2 transition-all duration-300 ${isDark ? 'border-gray-600' : 'border-gray-200'} ${isSidebarOpen ? 'w-10 h-10' : 'w-8 h-8'}`} />
+              <img src={convertGoogleDriveUrl(user.photoURL)} alt="user" className={`rounded-full border-2 transition-all duration-300 ${isDark ? 'border-gray-600' : 'border-gray-200'} ${isSidebarOpen ? 'w-10 h-10' : 'w-8 h-8'}`} />
               {isSidebarOpen && (
                 <div className="flex-grow">
                   {/* ✅ CAMBIO: Mostrar adminName (primera palabra del nombre) */}

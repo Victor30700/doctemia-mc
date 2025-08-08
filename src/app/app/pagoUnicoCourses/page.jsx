@@ -14,6 +14,23 @@ import Image from 'next/image';
 
 const NOMBRE_NEGOCIO = 'DOCTEMIA MC';
 
+
+const convertGoogleDriveUrl = (url) => {
+  if (!url) return '/placeholder.png';
+  
+  if (url.includes('drive.google.com/uc?') || url.includes('drive.google.com/thumbnail?')) {
+    return url;
+  }
+  
+  const fileIdMatch = url.match(/\/d\/([a-zA-Z0-9_-]+)/);
+  if (fileIdMatch) {
+    const fileId = fileIdMatch[1];
+    return `https://drive.google.com/thumbnail?id=${fileId}&sz=w400`;
+  }
+  
+  return url;
+};
+
 // El componente AccessDeniedScreen corregido
 const AccessDeniedScreen = ({ user, isDark, swalTheme }) => {
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -386,7 +403,16 @@ export default function CoursesPagoUnicoPage() {
                                                             <div className="relative">
                                                                 {/* ✨ CAMBIO PRINCIPAL: Usar componente Image de Next.js con mejor manejo */}
                                                                 <Image 
-                                                                    src={course.imageUrl || '/placeholder.png'} 
+                                                                    //src={course.imageUrl || '/placeholder.png'}
+
+                                                                    /* ---------- */
+                                                                    /* ------------ */
+                                                                    /* Correccion para que funcione imagenes que drive */
+                                                                    src={convertGoogleDriveUrl(course.imageUrl)}
+
+                                                                    /*--------------------- */
+                                                                    /*--------------------- */
+
                                                                     alt={course.title} 
                                                                     width={400}
                                                                     height={192}
