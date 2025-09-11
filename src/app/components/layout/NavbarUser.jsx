@@ -90,14 +90,39 @@ export default function NavbarUser({ children }) {
     setOpenDropdown(openDropdown === label ? null : label);
   };
 
-  const headerBg = isDark ? 'bg-gray-800 text-gray-100 border-gray-700' : 'bg-white text-gray-900 border-gray-200';
-  const sidebarBg = isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200';
-  const mainBg = isDark ? 'bg-gray-900 text-gray-100' : 'bg-gray-50 text-gray-900';
+  // --- ✅ MEJORA: Nueva paleta de colores personalizada ---
+  // Paleta de colores: #73C7E3, #FFF9F0, #24B0BA, #F0F2F2, #2E4A70, #CF8A40
+  const headerBg = isDark 
+    ? 'text-white border-gray-700' 
+    : 'text-gray-900 border-gray-200';
+  
+  const sidebarBg = isDark 
+    ? 'border-gray-700' 
+    : 'border-gray-200';
+  
+  const mainBg = isDark 
+    ? 'bg-gray-900 text-gray-100' 
+    : 'text-gray-900';
+
+  // Estilos dinámicos para el header con la nueva paleta
+  const headerStyle = isDark
+    ? { backgroundColor: '#2E4A70' } // Azul oscuro para modo oscuro
+    : { backgroundColor: '#73C7E3' }; // Azul claro para modo claro
+
+  // Estilos dinámicos para el sidebar con la nueva paleta
+  const sidebarStyle = isDark
+    ? { backgroundColor: '#2E4A70' } // Azul oscuro para modo oscuro
+    : { backgroundColor: '#FFF9F0' }; // Crema para modo claro
+
+  // Estilos dinámicos para el main con el fondo especificado
+  const mainStyle = isDark
+    ? { backgroundColor: '#2E4A70' } // Azul oscuro para modo oscuro
+    : { backgroundColor: '#FFF9F0' }; // Crema para modo claro (fondo solicitado)
 
   if (!isLoaded) {
     return (
-      <div className={`${mainBg} min-h-screen`}>
-        <div className={`animate-pulse h-16 w-full ${isDark ? 'bg-gray-800' : 'bg-white'}`}></div>
+      <div className={`min-h-screen`} style={mainStyle}>
+        <div className={`animate-pulse h-16 w-full`} style={headerStyle}></div>
       </div>
     );
   }
@@ -106,9 +131,12 @@ export default function NavbarUser({ children }) {
     <>
       {isMobile && isSidebarOpen && <div className="fixed inset-0 bg-black/60 z-30" onClick={toggleSidebar}></div>}
 
-      <header className={`fixed top-0 left-0 w-full flex justify-between items-center px-4 py-3 border-b z-40 shadow-sm transition-colors ${headerBg}`}>
+      <header 
+        className={`fixed top-0 left-0 w-full flex justify-between items-center px-4 py-3 border-b z-40 shadow-sm transition-colors ${headerBg}`}
+        style={headerStyle}
+      >
         <div className="flex items-center gap-4">
-          <button className="cursor-pointer p-2" onClick={toggleSidebar}>
+          <button className="cursor-pointer p-2 hover:bg-white/10 rounded-lg transition-colors" onClick={toggleSidebar}>
             {isSidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
           <div className="flex items-center gap-2">
@@ -117,19 +145,36 @@ export default function NavbarUser({ children }) {
           </div>
         </div>
         <div className="flex items-center gap-4">
-          <button onClick={toggleTheme} className={`p-2 rounded-lg transition ${isDark ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-100 hover:bg-gray-200'}`}>
-            {isDark ? <Sun className="w-5 h-5 text-yellow-400" /> : <Moon className="w-5 h-5 text-indigo-600" />}
+          <button 
+            onClick={toggleTheme} 
+            className={`p-2 rounded-lg transition-all hover:bg-white/10`}
+            style={{ backgroundColor: isDark ? '#24B0BA' : '#F0F2F2' }}
+          >
+            {isDark ? <Sun className="w-5 h-5 text-yellow-400" /> : <Moon className="w-5 h-5 text-gray-700" />}
           </button>
           {user && (
             <>
               <Link href="/app/profile" className="hidden sm:block">
-                <img src={user.photoURL || '/icons/user.jpg'} alt="user" className={`w-9 h-9 rounded-full border-2 transition-all hover:border-indigo-500 ${isDark ? 'border-gray-600' : 'border-gray-200'}`} />
+                <img 
+                  src={user.photoURL || '/icons/user.png'} 
+                  alt="user" 
+                  className={`w-9 h-9 rounded-full border-2 transition-all hover:border-opacity-80`}
+                  style={{ borderColor: isDark ? '#000000ff' : '#000000ff' }}
+                />
               </Link>
-              <button onClick={signOut} className={`hidden sm:inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition ${isDark ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-red-500 hover:bg-red-600 text-white'}`}>
+              <button 
+                onClick={signOut} 
+                className={`hidden sm:inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all hover:opacity-90 text-white`}
+                style={{ backgroundColor: '#d8220aff' }}
+              >
                 <LogOut className="w-4 h-4" />
                 <span>Salir</span>
               </button>
-              <button onClick={signOut} className={`sm:hidden p-2 rounded-lg transition ${isDark ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-red-500 hover:bg-red-600 text-white'}`}>
+              <button 
+                onClick={signOut} 
+                className={`sm:hidden p-2 rounded-lg transition-all hover:opacity-90 text-white`}
+                style={{ backgroundColor: '#030303ff' }}
+              >
                 <LogOut className="w-5 h-5" />
               </button>
             </>
@@ -137,14 +182,27 @@ export default function NavbarUser({ children }) {
         </div>
       </header>
 
-      <aside className={`fixed top-0 left-0 h-full pt-16 border-r shadow-lg transition-transform duration-300 ease-in-out ${sidebarBg}`} style={{ transform: isSidebarOpen ? 'translateX(0)' : 'translateX(-100%)', width: '16rem', zIndex: 35 }}>
+      <aside 
+        className={`fixed top-0 left-0 h-full pt-16 border-r shadow-lg transition-transform duration-300 ease-in-out ${sidebarBg}`} 
+        style={{ 
+          transform: isSidebarOpen ? 'translateX(0)' : 'translateX(-100%)', 
+          width: '16rem', 
+          zIndex: 35,
+          ...sidebarStyle
+        }}
+      >
         <nav className="flex-grow overflow-y-auto overflow-x-hidden mt-4">
           <ul className="space-y-1 px-2">
             {navItems.map((item, index) => {
               if (item.type === 'separator') {
                 return (
                   <li key={index} className="px-2 pt-4 pb-1">
-                    <span className="text-xs font-bold uppercase text-gray-500">{item.label}</span>
+                    <span 
+                      className="text-xs font-bold uppercase"
+                      style={{ color: isDark ? '#73C7E3' : '#2E4A70' }}
+                    >
+                      {item.label}
+                    </span>
                   </li>
                 );
               }
@@ -153,9 +211,31 @@ export default function NavbarUser({ children }) {
               if (item.type === 'dropdown') {
                 const isOpen = openDropdown === item.label;
                 const isParentActive = item.subItems.some(sub => pathname.startsWith(sub.href));
+                
+                const buttonStyle = isParentActive && !isOpen 
+                  ? { 
+                      backgroundColor: isDark ? '#24B0BA' : '#73C7E3', 
+                      color: isDark ? '#FFF9F0' : '#2E4A70' 
+                    }
+                  : { color: isDark ? '#FFF9F0' : '#2E4A70' };
+
                 return (
                   <li key={item.label}>
-                    <button onClick={() => handleDropdownClick(item.label)} className={`w-full flex items-center justify-between gap-4 px-2 py-2.5 rounded-lg transition-colors duration-200 ${isParentActive && !isOpen ? (isDark ? 'bg-indigo-900/20 text-indigo-400' : 'bg-indigo-100/50 text-indigo-700') : ''} ${isDark ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-700'}`}>
+                    <button 
+                      onClick={() => handleDropdownClick(item.label)} 
+                      className={`w-full flex items-center justify-between gap-4 px-2 py-2.5 rounded-lg transition-all duration-200 hover:opacity-80`}
+                      style={buttonStyle}
+                      onMouseEnter={(e) => {
+                        if (!(isParentActive && !isOpen)) {
+                          e.target.style.backgroundColor = isDark ? '#24B0BA' : '#F0F2F2';
+                        }
+                      }}
+                      onMouseLeave={(e) => {
+                        if (!(isParentActive && !isOpen)) {
+                          e.target.style.backgroundColor = 'transparent';
+                        }
+                      }}
+                    >
                       <div className="flex items-center gap-4">
                         <item.Icon className="w-5 h-5 flex-shrink-0" />
                         <span className="truncate font-medium">{item.label}</span>
@@ -166,9 +246,30 @@ export default function NavbarUser({ children }) {
                       <ul className="pl-6 pt-1 space-y-1">
                         {item.subItems.map(subItem => {
                           const active = pathname.startsWith(subItem.href);
+                          const subItemStyle = active 
+                            ? { 
+                                backgroundColor: isDark ? '#24B0BA' : '#73C7E3', 
+                                color: isDark ? '#FFF9F0' : '#2E4A70' 
+                              }
+                            : { color: isDark ? '#F0F2F2' : '#2E4A70' };
+
                           return (
                             <li key={subItem.href}>
-                              <Link href={subItem.href} className={`flex items-center gap-4 px-2 py-2 rounded-lg transition-colors duration-200 text-sm ${active ? (isDark ? 'bg-indigo-900/40 text-indigo-300' : 'bg-indigo-100 text-indigo-600') : (isDark ? 'hover:bg-gray-700/50 text-gray-300' : 'hover:bg-gray-100/80 text-gray-700')}`}>
+                              <Link 
+                                href={subItem.href} 
+                                className={`flex items-center gap-4 px-2 py-2 rounded-lg transition-all duration-200 text-sm hover:opacity-80`}
+                                style={subItemStyle}
+                                onMouseEnter={(e) => {
+                                  if (!active) {
+                                    e.target.style.backgroundColor = isDark ? '#24B0BA' : '#F0F2F2';
+                                  }
+                                }}
+                                onMouseLeave={(e) => {
+                                  if (!active) {
+                                    e.target.style.backgroundColor = 'transparent';
+                                  }
+                                }}
+                              >
                                 <subItem.Icon className="w-4 h-4 flex-shrink-0" />
                                 <span className="truncate font-medium">{subItem.label}</span>
                               </Link>
@@ -182,9 +283,30 @@ export default function NavbarUser({ children }) {
               }
 
               const active = pathname === item.href || (item.href !== '/app' && pathname.startsWith(item.href));
+              const linkStyle = active 
+                ? { 
+                    backgroundColor: isDark ? '#24B0BA' : '#73C7E3', 
+                    color: isDark ? '#FFF9F0' : '#2E4A70' 
+                  }
+                : { color: isDark ? '#FFF9F0' : '#2E4A70' };
+
               return (
                 <li key={`${item.href}-${item.label}`}>
-                  <Link href={item.href} className={`flex items-center gap-4 px-2 py-2.5 rounded-lg transition-colors duration-200 ${active ? (isDark ? 'bg-indigo-900/40 text-indigo-300' : 'bg-indigo-100 text-indigo-600') : (isDark ? 'hover:bg-gray-700 text-gray-300' : 'hover:bg-gray-100 text-gray-700')}`}>
+                  <Link 
+                    href={item.href} 
+                    className={`flex items-center gap-4 px-2 py-2.5 rounded-lg transition-all duration-200 hover:opacity-80`}
+                    style={linkStyle}
+                    onMouseEnter={(e) => {
+                      if (!active) {
+                        e.target.style.backgroundColor = isDark ? '#24B0BA' : '#F0F2F2';
+                      }
+                    }}
+                    onMouseLeave={(e) => {
+                      if (!active) {
+                        e.target.style.backgroundColor = 'transparent';
+                      }
+                    }}
+                  >
                     <item.Icon className="w-5 h-5 flex-shrink-0" />
                     <span className="truncate font-medium">{item.label}</span>
                   </Link>
@@ -195,7 +317,13 @@ export default function NavbarUser({ children }) {
         </nav>
       </aside>
 
-      <main className={`pt-16 transition-all duration-300 ease-in-out min-h-screen ${mainBg}`} style={{ paddingLeft: isMobile ? '0' : (isSidebarOpen ? '16rem' : '0') }}>
+      <main 
+        className={`pt-16 transition-all duration-300 ease-in-out min-h-screen ${mainBg}`} 
+        style={{ 
+          paddingLeft: isMobile ? '0' : (isSidebarOpen ? '16rem' : '0'),
+          ...mainStyle
+        }}
+      >
         {children}
       </main>
     </>

@@ -6,7 +6,7 @@ import { db } from '@/lib/firebase';
 import { singlePaymentCoursesCollectionRef } from '@/lib/db';
 import Swal from 'sweetalert2';
 import { useTheme } from '@/context/ThemeContext';
-import { Book, FileText, Link as LinkIcon, Image as ImageIcon, Layers, Video, Plus, Trash2, ToggleLeft, ToggleRight } from 'lucide-react';
+import { Book, FileText, Link as LinkIcon, Image as ImageIcon, Layers, Video, Plus, Trash2, ToggleLeft, ToggleRight, X } from 'lucide-react';
 
 // Componente para el formulario de Cursos de Pago Único con mejoras de estilo y funcionalidad
 export default function CourseForm({ course, courseId }) {
@@ -21,7 +21,19 @@ export default function CourseForm({ course, courseId }) {
   const [categoryId, setCategoryId] = useState(course ? course.categoryId : '');
   const [isActive, setIsActive] = useState(course?.isActive !== undefined ? course.isActive : true); // Nuevo estado para Activo/Inactivo
   const [categories, setCategories] = useState([]);
-  const [modules, setModules] = useState(course?.modules && course.modules.length > 0 ? course.modules : [{ title: '', videos: [{ title: '', url: '' }] }]);
+  const [modules, setModules] = useState(
+    course?.modules && course.modules.length > 0 
+      ? course.modules.map(module => ({
+          ...module,
+          videos: module.videos.map(video => ({
+            title: video.title || '',
+            url: video.url || '',
+            driveLink: video.driveLink || '', // Agregar driveLink si existe
+            showDriveLink: video.driveLink ? true : false // Mostrar el campo si ya tiene un link
+          }))
+        }))
+      : [{ title: '', videos: [{ title: '', url: '', driveLink: '', showDriveLink: false }] }]
+  );
   const [loading, setLoading] = useState(false);
 
   const swalTheme = {
@@ -50,7 +62,7 @@ export default function CourseForm({ course, courseId }) {
   };
 
   const addModule = () => {
-    setModules([...modules, { title: '', videos: [{ title: '', url: '' }] }]);
+    setModules([...modules, { title: '', videos: [{ title: '', url: '', driveLink: '', showDriveLink: false }] }]);
   };
 
   const removeModule = (index) => {
@@ -71,7 +83,7 @@ export default function CourseForm({ course, courseId }) {
 
   const addVideo = (moduleIndex) => {
     const newModules = [...modules];
-    newModules[moduleIndex].videos.push({ title: '', url: '' });
+    newModules[moduleIndex].videos.push({ title: '', url: '', driveLink: '', showDriveLink: false });
     setModules(newModules);
   };
 
@@ -85,6 +97,23 @@ export default function CourseForm({ course, courseId }) {
     }
   };
 
+  // --- NUEVAS FUNCIONES PARA MANEJAR LINKS DE DRIVE ---
+  const toggleDriveLink = (moduleIndex, videoIndex) => {
+    const newModules = [...modules];
+    const video = newModules[moduleIndex].videos[videoIndex];
+    video.showDriveLink = !video.showDriveLink;
+    if (!video.showDriveLink) {
+      video.driveLink = ''; // Limpiar el link cuando se oculta
+    }
+    setModules(newModules);
+  };
+
+  const handleDriveLinkChange = (moduleIndex, videoIndex, value) => {
+    const newModules = [...modules];
+    newModules[moduleIndex].videos[videoIndex].driveLink = value;
+    setModules(newModules);
+  };
+
   // --- MANEJADOR PARA ENVIAR EL FORMULARIO ---
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -94,6 +123,22 @@ export default function CourseForm({ course, courseId }) {
     }
     setLoading(true);
 
+    // Limpiar los datos antes de enviar
+    const cleanedModules = modules.map(module => ({
+      title: module.title,
+      videos: module.videos.map(video => {
+        const cleanedVideo = {
+          title: video.title,
+          url: video.url
+        };
+        // Solo incluir driveLink si está presente y showDriveLink es true
+        if (video.showDriveLink && video.driveLink) {
+          cleanedVideo.driveLink = video.driveLink;
+        }
+        return cleanedVideo;
+      })
+    }));
+
     const courseData = {
       title,
       description,
@@ -101,7 +146,7 @@ export default function CourseForm({ course, courseId }) {
       summaryDriveLink,
       isActive,
       categoryId: categoryId || null,
-      modules,
+      modules: cleanedModules,
       updatedAt: serverTimestamp(),
     };
 
@@ -205,24 +250,96 @@ export default function CourseForm({ course, courseId }) {
                                     <div key={videoIndex} className={`p-3 border rounded-md relative ${isDark ? 'border-gray-600' : 'border-gray-200'}`}>
                                         <h4 className={`text-sm font-medium mb-2 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>Video {videoIndex + 1}</h4>
                                         <div className="space-y-2">
-                                            <input type="text" name="title" value={video.title} onChange={(e) => handleVideoChange(moduleIndex, videoIndex, e)} placeholder="Título del Video" className={`${inputBaseClasses} ${inputThemeClasses}`} />
-                                            <input type="text" name="url" value={video.url} onChange={(e) => handleVideoChange(moduleIndex, videoIndex, e)} placeholder="URL del Video" className={`${inputBaseClasses} ${inputThemeClasses}`} />
+                                            <input 
+                                                type="text" 
+                                                name="title" 
+                                                value={video.title} 
+                                                onChange={(e) => handleVideoChange(moduleIndex, videoIndex, e)} 
+                                                placeholder="Título del Video" 
+                                                className={`${inputBaseClasses} ${inputThemeClasses}`} 
+                                            />
+                                            <input 
+                                                type="text" 
+                                                name="url" 
+                                                value={video.url} 
+                                                onChange={(e) => handleVideoChange(moduleIndex, videoIndex, e)} 
+                                                placeholder="URL del Video" 
+                                                className={`${inputBaseClasses} ${inputThemeClasses}`} 
+                                            />
+                                            
+                                            {/* NUEVA SECCIÓN: Link de Drive para cada video */}
+                                            {video.showDriveLink ? (
+                                                <div className="relative">
+                                                    <input 
+                                                        type="text" 
+                                                        value={video.driveLink} 
+                                                        onChange={(e) => handleDriveLinkChange(moduleIndex, videoIndex, e.target.value)} 
+                                                        placeholder="Link de Resumen Drive (https://docs.google.com/...)" 
+                                                        className={`${inputBaseClasses} ${inputThemeClasses} pr-10`} 
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => toggleDriveLink(moduleIndex, videoIndex)}
+                                                        className="absolute right-2 top-1/2 -translate-y-1/2 text-red-600 hover:text-red-500 p-1 rounded-full transition-colors"
+                                                        title="Quitar Link de Drive"
+                                                    >
+                                                        <X size={20} />
+                                                    </button>
+                                                </div>
+                                            ) : (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => toggleDriveLink(moduleIndex, videoIndex)}
+                                                    className="inline-flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300"
+                                                >
+                                                    <LinkIcon size={16} />
+                                                    Agregar Link de Drive
+                                                </button>
+                                            )}
                                         </div>
-                                        <button type="button" onClick={() => removeVideo(moduleIndex, videoIndex)} className="absolute top-2 right-2 text-red-600 hover:text-red-500 p-1 rounded-full transition-colors"><Trash2 size={16} /></button>
+                                        <button 
+                                            type="button" 
+                                            onClick={() => removeVideo(moduleIndex, videoIndex)} 
+                                            className="absolute top-2 right-2 text-red-600 hover:text-red-500 p-1 rounded-full transition-colors"
+                                        >
+                                            <Trash2 size={16} />
+                                        </button>
                                     </div>
                                 ))}
-                                <button type="button" onClick={() => addVideo(moduleIndex)} className="inline-flex items-center gap-2 text-sm font-semibold text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300 mt-2"><Plus size={16} /> Añadir Video</button>
+                                <button 
+                                    type="button" 
+                                    onClick={() => addVideo(moduleIndex)} 
+                                    className="inline-flex items-center gap-2 text-sm font-semibold text-indigo-600 hover:text-indigo-500 dark:text-indigo-400 dark:hover:text-indigo-300 mt-2"
+                                >
+                                    <Plus size={16} /> Añadir Video
+                                </button>
                             </div>
                         </div>
                     ))}
-                    <button type="button" onClick={addModule} className="inline-flex items-center gap-2 text-sm font-semibold text-green-600 hover:text-green-500 dark:text-green-400 dark:hover:text-green-300"><Plus size={16} /> Añadir Módulo</button>
+                    <button 
+                        type="button" 
+                        onClick={addModule} 
+                        className="inline-flex items-center gap-2 text-sm font-semibold text-green-600 hover:text-green-500 dark:text-green-400 dark:hover:text-green-300"
+                    >
+                        <Plus size={16} /> Añadir Módulo
+                    </button>
                 </div>
             </div>
 
             {/* --- BOTONES DE ACCIÓN --- */}
             <div className="flex items-center justify-end gap-x-6">
-                <button type="button" onClick={() => router.back()} className="text-sm font-semibold leading-6 text-gray-900 dark:text-gray-200">Cancelar</button>
-                <button type="submit" disabled={loading} className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:bg-gray-400">
+                <button 
+                    type="button" 
+                    onClick={() => router.back()} 
+                    className="text-sm font-semibold leading-6 text-gray-900 dark:text-gray-200"
+                >
+                    Cancelar
+                </button>
+                <button 
+                    type="submit" 
+                    disabled={loading} 
+                    className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-indigo-600 disabled:bg-gray-400"
+                >
                     {loading ? 'Guardando...' : (courseId ? 'Actualizar Curso' : 'Crear Curso')}
                 </button>
             </div>

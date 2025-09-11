@@ -8,7 +8,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
 import Swal from 'sweetalert2';
 import ProtectedVideoPlayer from '@/app/components/video/ProtectedVideoPlayer';
-import { FileText, Video, ChevronDown } from 'lucide-react';
+import { FileText, Video, ChevronDown, ExternalLink, FolderOpen } from 'lucide-react';
 
 export default function ContenidoCursoPagoUnicoPage() {
     const { user } = useAuth();
@@ -156,14 +156,57 @@ export default function ContenidoCursoPagoUnicoPage() {
                                 <div className={`flex justify-center items-center h-full ${isDark ? 'bg-gray-700' : 'bg-gray-200'}`}><p>Selecciona un video.</p></div>
                             )}
                         </div>
+                        
+                        {/* NUEVA SECCIÓN: Información del Video Actual */}
+                        {selectedVideo && (
+                            <div className={`p-6 rounded-lg shadow-md mb-4 ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
+                                <h3 className="text-xl font-semibold mb-3">
+                                    {selectedVideo.title || 'Video sin título'}
+                                </h3>
+                                
+                                {/* Mostrar link de Drive del video seleccionado si existe */}
+                                {selectedVideo.driveLink && (
+                                    <div className="mt-4">
+                                        <h4 className={`text-sm font-medium mb-2 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                                            Material de Apoyo del Video:
+                                        </h4>
+                                        <a 
+                                            href={selectedVideo.driveLink} 
+                                            target="_blank" 
+                                            rel="noopener noreferrer" 
+                                            className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition ${
+                                                isDark 
+                                                ? 'bg-blue-900/30 hover:bg-blue-900/50 text-blue-300 border border-blue-700' 
+                                                : 'bg-blue-50 hover:bg-blue-100 text-blue-700 border border-blue-200'
+                                            }`}
+                                        >
+                                            <FolderOpen className="h-4 w-4" />
+                                            <span>Resumen del Video en Drive</span>
+                                            <ExternalLink className="h-3 w-3" />
+                                        </a>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
                         <div className={`p-6 rounded-lg shadow-md ${isDark ? 'bg-gray-800' : 'bg-white'}`}>
                             <h3 className="text-xl font-semibold mb-3">Descripción del Curso</h3>
                             <p className={`${isDark ? 'text-gray-400' : 'text-gray-600'} whitespace-pre-line`}>{courseDetails.description || 'No hay descripción.'}</p>
                             {courseDetails.summaryDriveLink && (
                                 <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
-                                    <h4 className="text-lg font-semibold mb-3">Recursos Adicionales</h4>
-                                    <a href={courseDetails.summaryDriveLink} target="_blank" rel="noopener noreferrer" className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-sm transition ${isDark ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-200 hover:bg-gray-300'}`}>
-                                        <FileText className="h-4 w-4" /> Resumen del Curso (Drive)
+                                    <h4 className="text-lg font-semibold mb-3">Recursos Generales del Curso</h4>
+                                    <a 
+                                        href={courseDetails.summaryDriveLink} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer" 
+                                        className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg font-semibold text-sm transition ${
+                                            isDark 
+                                            ? 'bg-gray-700 hover:bg-gray-600' 
+                                            : 'bg-gray-200 hover:bg-gray-300'
+                                        }`}
+                                    >
+                                        <FileText className="h-4 w-4" /> 
+                                        Resumen General del Curso (Drive)
                                     </a>
                                 </div>
                             )}
@@ -176,7 +219,12 @@ export default function ContenidoCursoPagoUnicoPage() {
                             <div className="space-y-2">
                                 {courseDetails.modules?.map((module, moduleIdx) => (
                                     <div key={moduleIdx} className={`rounded-lg border overflow-hidden ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
-                                        <button onClick={() => setOpenModuleIndex(openModuleIndex === moduleIdx ? -1 : moduleIdx)} className={`w-full flex justify-between items-center p-3 text-left font-semibold ${isDark ? 'bg-gray-700/50 hover:bg-gray-700' : 'bg-gray-50 hover:bg-gray-100'}`}>
+                                        <button 
+                                            onClick={() => setOpenModuleIndex(openModuleIndex === moduleIdx ? -1 : moduleIdx)} 
+                                            className={`w-full flex justify-between items-center p-3 text-left font-semibold ${
+                                                isDark ? 'bg-gray-700/50 hover:bg-gray-700' : 'bg-gray-50 hover:bg-gray-100'
+                                            }`}
+                                        >
                                             <span>{module.title || `Módulo ${moduleIdx + 1}`}</span>
                                             <ChevronDown className={`transition-transform ${openModuleIndex === moduleIdx ? 'rotate-180' : ''}`} />
                                         </button>
@@ -187,21 +235,72 @@ export default function ContenidoCursoPagoUnicoPage() {
                                                     const progress = videoProgress[video.url]?.played || 0;
                                                     return (
                                                         <li key={videoIdx}>
-                                                            <button onClick={() => setSelectedVideo(video)} className={`w-full text-left p-2.5 rounded-md transition-colors flex items-center gap-3 relative overflow-hidden ${isSelected ? (isDark ? 'bg-blue-900/50' : 'bg-blue-100') : (isDark ? 'hover:bg-gray-700/60' : 'hover:bg-gray-200/70')}`}>
-                                                                <div className={`absolute left-0 top-0 h-full opacity-30 ${isDark ? 'bg-green-800' : 'bg-green-200'}`} style={{ width: `${progress * 100}%` }} />
-                                                                <Video size={18} className={`relative ${isSelected ? (isDark ? 'text-blue-300' : 'text-blue-600') : (isDark ? 'text-gray-400' : 'text-gray-500')}`} />
-                                                                <div className="relative flex flex-col">
-                                                                    <span className={`text-sm ${isSelected ? (isDark ? 'text-blue-200' : 'text-blue-800') : ''}`}>{video.title || `Video ${videoIdx + 1}`}</span>
-                                                                    {progress > 0 && <span className={`text-xs ${isDark ? 'text-green-400' : 'text-green-600'}`}>{Math.round(progress * 100)}% visto</span>}
+                                                            <button 
+                                                                onClick={() => setSelectedVideo(video)} 
+                                                                className={`w-full text-left p-2.5 rounded-md transition-colors flex items-center gap-3 relative overflow-hidden group ${
+                                                                    isSelected 
+                                                                    ? (isDark ? 'bg-blue-900/50' : 'bg-blue-100') 
+                                                                    : (isDark ? 'hover:bg-gray-700/60' : 'hover:bg-gray-200/70')
+                                                                }`}
+                                                            >
+                                                                <div 
+                                                                    className={`absolute left-0 top-0 h-full opacity-30 ${
+                                                                        isDark ? 'bg-green-800' : 'bg-green-200'
+                                                                    }`} 
+                                                                    style={{ width: `${progress * 100}%` }} 
+                                                                />
+                                                                <Video 
+                                                                    size={18} 
+                                                                    className={`relative flex-shrink-0 ${
+                                                                        isSelected 
+                                                                        ? (isDark ? 'text-blue-300' : 'text-blue-600') 
+                                                                        : (isDark ? 'text-gray-400' : 'text-gray-500')
+                                                                    }`} 
+                                                                />
+                                                                <div className="relative flex flex-col flex-grow">
+                                                                    <div className="flex items-start justify-between gap-2">
+                                                                        <span className={`text-sm ${
+                                                                            isSelected 
+                                                                            ? (isDark ? 'text-blue-200' : 'text-blue-800') 
+                                                                            : ''
+                                                                        }`}>
+                                                                            {video.title || `Video ${videoIdx + 1}`}
+                                                                        </span>
+                                                                        {/* Indicador de que tiene material de Drive */}
+                                                                        {video.driveLink && (
+                                                                            <FolderOpen 
+                                                                                size={14} 
+                                                                                className={`flex-shrink-0 ${
+                                                                                    isSelected
+                                                                                    ? (isDark ? 'text-blue-300' : 'text-blue-600')
+                                                                                    : (isDark ? 'text-gray-500' : 'text-gray-400')
+                                                                                } group-hover:scale-110 transition-transform`}
+                                                                                title="Este video tiene material de apoyo"
+                                                                            />
+                                                                        )}
+                                                                    </div>
+                                                                    {progress > 0 && (
+                                                                        <span className={`text-xs ${isDark ? 'text-green-400' : 'text-green-600'}`}>
+                                                                            {Math.round(progress * 100)}% visto
+                                                                        </span>
+                                                                    )}
                                                                 </div>
                                                             </button>
                                                         </li>
-                                                    )
+                                                    );
                                                 })}
                                             </ul>
                                         )}
                                     </div>
                                 ))}
+                            </div>
+                            
+                            {/* NUEVA SECCIÓN: Resumen de Recursos Disponibles */}
+                            <div className={`mt-4 pt-4 border-t ${isDark ? 'border-gray-700' : 'border-gray-200'}`}>
+                                <p className={`text-xs ${isDark ? 'text-gray-500' : 'text-gray-600'}`}>
+                                    <FolderOpen size={12} className="inline mr-1" />
+                                    Los videos con este ícono incluyen material de apoyo
+                                </p>
                             </div>
                         </div>
                     </div>

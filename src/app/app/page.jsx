@@ -16,7 +16,17 @@ import {
   BookMarked, Sun, ArrowRight, PlayCircle, BrainCircuit, Stethoscope, Target, Zap, Award, MapPin
 } from 'lucide-react';
 
-// --- COMPONENTE MEJORADO: Fondo Animado con Cambio de Tonalidades por Scroll ---
+// Paleta de colores personalizada
+const CUSTOM_COLORS = {
+  primary: '#73C7E3',    // Celeste principal
+  background: '#FFF9F0', // Fondo crema
+  secondary: '#24B0BA',  // Verde azulado
+  neutral: '#F0F2F2',    // Gris claro
+  dark: '#2E4A70',       // Azul oscuro
+  gold: '#CF8A40',       // Dorado para tarjetas
+};
+
+// --- COMPONENTE MEJORADO: Fondo Animado con Paleta Personalizada ---
 function AnimatedBackground({ isDark, scrollY }) {
   // Calculamos el progreso del scroll (0 a 1) con validaciones
   const getScrollProgress = () => {
@@ -26,7 +36,6 @@ function AnimatedBackground({ isDark, scrollY }) {
     const windowHeight = window.innerHeight;
     const maxScroll = scrollHeight - windowHeight;
     
-    // Validaciones para evitar NaN
     if (!maxScroll || maxScroll <= 0 || !scrollY || scrollY < 0) return 0;
     if (!isFinite(scrollY) || !isFinite(maxScroll)) return 0;
     
@@ -35,125 +44,126 @@ function AnimatedBackground({ isDark, scrollY }) {
 
   const scrollProgress = getScrollProgress();
   
-  // Definimos las tonalidades que cambian con el scroll
+  // Definimos las tonalidades que cambian con el scroll usando la paleta personalizada
   const getBackgroundStyle = () => {
     const progress = isFinite(scrollProgress) ? scrollProgress : 0;
     
     if (isDark) {
-      // Modo oscuro: transiciones de negro a azul profundo a morado
+      // Modo oscuro: transiciones usando colores personalizados
       if (progress < 0.25) {
         const factor = Math.max(0, Math.min(progress, 0.25));
         return {
           background: `linear-gradient(135deg, 
-            rgba(0, 0, 0, ${Math.max(0.1, 0.9 - factor * 2)}) 0%, 
-            rgba(15, 23, 42, ${Math.max(0.1, 0.8 - factor * 1.5)}) 25%, 
-            rgba(30, 41, 59, ${Math.max(0.1, 0.7 - factor)}) 50%, 
-            rgba(51, 65, 85, ${Math.max(0.1, 0.6 - factor * 0.5)}) 75%, 
-            rgba(0, 0, 0, ${Math.max(0.1, 0.9 - factor * 2)}) 100%)`
+            rgba(46, 74, 112, ${Math.max(0.1, 0.9 - factor * 2)}) 0%, 
+            rgba(36, 176, 186, ${Math.max(0.1, 0.3 - factor * 0.5)}) 25%, 
+            rgba(115, 199, 227, ${Math.max(0.1, 0.2 - factor * 0.3)}) 50%, 
+            rgba(46, 74, 112, ${Math.max(0.1, 0.6 - factor * 0.5)}) 75%, 
+            rgba(46, 74, 112, ${Math.max(0.1, 0.9 - factor * 2)}) 100%)`
         };
       } else if (progress < 0.5) {
         const factor = Math.max(0, Math.min(progress - 0.25, 0.25));
         return {
           background: `linear-gradient(135deg, 
-            rgba(15, 23, 42, 0.8) 0%, 
-            rgba(30, 58, 138, ${Math.max(0.1, Math.min(0.9, 0.7 + factor * 0.4))}) 25%, 
-            rgba(59, 130, 246, ${Math.max(0.1, Math.min(0.9, 0.3 + factor * 0.6))}) 50%, 
-            rgba(37, 99, 235, ${Math.max(0.1, Math.min(0.9, 0.5 + factor * 0.4))}) 75%, 
-            rgba(15, 23, 42, 0.8) 100%)`
+            rgba(46, 74, 112, 0.8) 0%, 
+            rgba(36, 176, 186, ${Math.max(0.1, Math.min(0.9, 0.4 + factor * 0.4))}) 25%, 
+            rgba(115, 199, 227, ${Math.max(0.1, Math.min(0.9, 0.3 + factor * 0.6))}) 50%, 
+            rgba(207, 138, 64, ${Math.max(0.1, Math.min(0.9, 0.2 + factor * 0.4))}) 75%, 
+            rgba(46, 74, 112, 0.8) 100%)`
         };
       } else if (progress < 0.75) {
         const factor = Math.max(0, Math.min(progress - 0.5, 0.25));
         return {
           background: `linear-gradient(135deg, 
-            rgba(30, 58, 138, 0.8) 0%, 
-            rgba(67, 56, 202, ${Math.max(0.1, Math.min(0.9, 0.6 + factor * 0.4))}) 25%, 
-            rgba(139, 92, 246, ${Math.max(0.1, Math.min(0.9, 0.4 + factor * 0.6))}) 50%, 
-            rgba(124, 58, 237, ${Math.max(0.1, Math.min(0.9, 0.5 + factor * 0.4))}) 75%, 
-            rgba(30, 58, 138, 0.8) 100%)`
+            rgba(36, 176, 186, 0.8) 0%, 
+            rgba(115, 199, 227, ${Math.max(0.1, Math.min(0.9, 0.6 + factor * 0.4))}) 25%, 
+            rgba(207, 138, 64, ${Math.max(0.1, Math.min(0.9, 0.4 + factor * 0.6))}) 50%, 
+            rgba(46, 74, 112, ${Math.max(0.1, Math.min(0.9, 0.5 + factor * 0.4))}) 75%, 
+            rgba(36, 176, 186, 0.8) 100%)`
         };
       } else {
         const factor = Math.max(0, Math.min(progress - 0.75, 0.25));
         return {
           background: `linear-gradient(135deg, 
-            rgba(67, 56, 202, 0.9) 0%, 
-            rgba(139, 92, 246, ${Math.max(0.1, Math.min(0.9, 0.7 + factor * 0.3))}) 25%, 
-            rgba(168, 85, 247, ${Math.max(0.1, Math.min(0.9, 0.5 + factor * 0.5))}) 50%, 
-            rgba(147, 51, 234, ${Math.max(0.1, Math.min(0.9, 0.6 + factor * 0.4))}) 75%, 
-            rgba(67, 56, 202, 0.9) 100%)`
+            rgba(115, 199, 227, 0.9) 0%, 
+            rgba(207, 138, 64, ${Math.max(0.1, Math.min(0.9, 0.7 + factor * 0.3))}) 25%, 
+            rgba(36, 176, 186, ${Math.max(0.1, Math.min(0.9, 0.5 + factor * 0.5))}) 50%, 
+            rgba(46, 74, 112, ${Math.max(0.1, Math.min(0.9, 0.6 + factor * 0.4))}) 75%, 
+            rgba(115, 199, 227, 0.9) 100%)`
         };
       }
     } else {
-      // Modo claro: transiciones de blanco a azul claro a celeste
+      // Modo claro: fondo base crema con transiciones suaves
+      const baseColor = 'rgba(255, 249, 240, 0.95)'; // FFF9F0
       if (progress < 0.25) {
         const factor = Math.max(0, Math.min(progress, 0.25));
         return {
           background: `linear-gradient(135deg, 
-            rgba(255, 255, 255, ${Math.max(0.1, Math.min(0.98, 0.95 - factor * 0.2))}) 0%, 
-            rgba(248, 250, 252, ${Math.max(0.1, Math.min(0.95, 0.9 - factor * 0.1))}) 25%, 
-            rgba(241, 245, 249, ${Math.max(0.1, Math.min(0.9, 0.85 - factor * 0.1))}) 50%, 
-            rgba(226, 232, 240, ${Math.max(0.1, Math.min(0.85, 0.8 - factor * 0.1))}) 75%, 
-            rgba(255, 255, 255, ${Math.max(0.1, Math.min(0.98, 0.95 - factor * 0.2))}) 100%)`
+            ${baseColor} 0%, 
+            rgba(240, 242, 242, ${Math.max(0.8, 0.9 - factor * 0.1)}) 25%, 
+            rgba(115, 199, 227, ${Math.max(0.1, factor * 0.2)}) 50%, 
+            rgba(240, 242, 242, ${Math.max(0.8, 0.9 - factor * 0.1)}) 75%, 
+            ${baseColor} 100%)`
         };
       } else if (progress < 0.5) {
         const factor = Math.max(0, Math.min(progress - 0.25, 0.25));
         return {
           background: `linear-gradient(135deg, 
-            rgba(248, 250, 252, 0.9) 0%, 
-            rgba(219, 234, 254, ${Math.max(0.1, Math.min(0.95, 0.8 + factor * 0.2))}) 25%, 
-            rgba(191, 219, 254, ${Math.max(0.1, Math.min(0.9, 0.6 + factor * 0.4))}) 50%, 
-            rgba(147, 197, 253, ${Math.max(0.1, Math.min(0.9, 0.7 + factor * 0.3))}) 75%, 
-            rgba(248, 250, 252, 0.9) 100%)`
+            ${baseColor} 0%, 
+            rgba(115, 199, 227, ${Math.max(0.1, Math.min(0.3, 0.2 + factor * 0.2))}) 25%, 
+            rgba(36, 176, 186, ${Math.max(0.05, Math.min(0.2, factor * 0.3))}) 50%, 
+            rgba(115, 199, 227, ${Math.max(0.1, Math.min(0.3, 0.2 + factor * 0.2))}) 75%, 
+            ${baseColor} 100%)`
         };
       } else if (progress < 0.75) {
         const factor = Math.max(0, Math.min(progress - 0.5, 0.25));
         return {
           background: `linear-gradient(135deg, 
-            rgba(219, 234, 254, 0.85) 0%, 
-            rgba(165, 180, 252, ${Math.max(0.1, Math.min(0.9, 0.7 + factor * 0.3))}) 25%, 
-            rgba(129, 140, 248, ${Math.max(0.1, Math.min(0.9, 0.5 + factor * 0.5))}) 50%, 
-            rgba(139, 92, 246, ${Math.max(0.1, Math.min(0.9, 0.6 + factor * 0.4))}) 75%, 
-            rgba(219, 234, 254, 0.85) 100%)`
+            ${baseColor} 0%, 
+            rgba(36, 176, 186, ${Math.max(0.1, Math.min(0.4, 0.2 + factor * 0.3))}) 25%, 
+            rgba(207, 138, 64, ${Math.max(0.05, Math.min(0.2, factor * 0.3))}) 50%, 
+            rgba(36, 176, 186, ${Math.max(0.1, Math.min(0.4, 0.2 + factor * 0.3))}) 75%, 
+            ${baseColor} 100%)`
         };
       } else {
         const factor = Math.max(0, Math.min(progress - 0.75, 0.25));
         return {
           background: `linear-gradient(135deg, 
-            rgba(165, 180, 252, 0.8) 0%, 
-            rgba(129, 140, 248, ${Math.max(0.1, Math.min(0.9, 0.7 + factor * 0.3))}) 25%, 
-            rgba(99, 102, 241, ${Math.max(0.1, Math.min(0.9, 0.6 + factor * 0.4))}) 50%, 
-            rgba(79, 70, 229, ${Math.max(0.1, Math.min(0.9, 0.5 + factor * 0.5))}) 75%, 
-            rgba(165, 180, 252, 0.8) 100%)`
+            ${baseColor} 0%, 
+            rgba(207, 138, 64, ${Math.max(0.1, Math.min(0.3, 0.15 + factor * 0.3))}) 25%, 
+            rgba(46, 74, 112, ${Math.max(0.05, Math.min(0.2, factor * 0.25))}) 50%, 
+            rgba(207, 138, 64, ${Math.max(0.1, Math.min(0.3, 0.15 + factor * 0.3))}) 75%, 
+            ${baseColor} 100%)`
         };
       }
     }
   };
 
-  // Colores de líneas que cambian con el scroll
+  // Colores de líneas usando la paleta personalizada
   const getLineColor = () => {
     const progress = isFinite(scrollProgress) ? scrollProgress : 0;
     if (isDark) {
       const baseOpacity = Math.max(0.02, Math.min(0.2, 0.08 + progress * 0.12));
-      return `rgba(59, 130, 246, ${baseOpacity})`;
+      return `rgba(115, 199, 227, ${baseOpacity})`; // Color primario
     } else {
       const baseOpacity = Math.max(0.02, Math.min(0.16, 0.06 + progress * 0.1));
-      return `rgba(59, 130, 246, ${baseOpacity})`;
+      return `rgba(36, 176, 186, ${baseOpacity})`; // Color secundario
     }
   };
 
-  // Colores de orbes que cambian con el scroll
+  // Colores de orbes usando la paleta personalizada
   const getOrbColors = () => {
     const progress = isFinite(scrollProgress) ? scrollProgress : 0;
     if (isDark) {
       return {
-        orb1: `rgba(59, 130, 246, ${Math.max(0.05, Math.min(0.3, 0.15 + progress * 0.15))})`,
-        orb2: `rgba(168, 85, 247, ${Math.max(0.04, Math.min(0.3, 0.12 + progress * 0.18))})`,
-        orb3: `rgba(34, 197, 94, ${Math.max(0.03, Math.min(0.3, 0.1 + progress * 0.2))})`
+        orb1: `rgba(115, 199, 227, ${Math.max(0.05, Math.min(0.3, 0.15 + progress * 0.15))})`, // Primary
+        orb2: `rgba(207, 138, 64, ${Math.max(0.04, Math.min(0.3, 0.12 + progress * 0.18))})`, // Gold
+        orb3: `rgba(36, 176, 186, ${Math.max(0.03, Math.min(0.3, 0.1 + progress * 0.2))})`  // Secondary
       };
     } else {
       return {
-        orb1: `rgba(59, 130, 246, ${Math.max(0.03, Math.min(0.2, 0.1 + progress * 0.1))})`,
-        orb2: `rgba(168, 85, 247, ${Math.max(0.02, Math.min(0.2, 0.08 + progress * 0.12))})`,
-        orb3: `rgba(34, 197, 94, ${Math.max(0.02, Math.min(0.2, 0.06 + progress * 0.14))})`
+        orb1: `rgba(115, 199, 227, ${Math.max(0.03, Math.min(0.2, 0.1 + progress * 0.1))})`, // Primary
+        orb2: `rgba(207, 138, 64, ${Math.max(0.02, Math.min(0.2, 0.08 + progress * 0.12))})`, // Gold
+        orb3: `rgba(36, 176, 186, ${Math.max(0.02, Math.min(0.2, 0.06 + progress * 0.14))})`  // Secondary
       };
     }
   };
@@ -179,7 +189,7 @@ function AnimatedBackground({ isDark, scrollY }) {
         }}
       />
       
-      {/* Orbes flotantes con colores cambiantes */}
+      {/* Orbes flotantes con colores personalizados */}
       <div className="absolute inset-0">
         <div
           className="absolute w-96 h-96 rounded-full blur-3xl animate-float-slow"
@@ -217,7 +227,7 @@ function AnimatedBackground({ isDark, scrollY }) {
           <div
             className="absolute w-72 h-72 rounded-full blur-3xl animate-float-slow"
             style={{
-              background: `radial-gradient(circle, ${isDark ? 'rgba(236, 72, 153, 0.15)' : 'rgba(236, 72, 153, 0.1)'} 0%, transparent 70%)`,
+              background: `radial-gradient(circle, rgba(46, 74, 112, ${isDark ? '0.15' : '0.1'}) 0%, transparent 70%)`,
               top: `${Math.max(15, Math.min(60, 30 + progress * 20))}%`,
               right: `${Math.max(20, Math.min(70, 50 - progress * 15))}%`,
               animationDelay: '9s',
@@ -230,7 +240,7 @@ function AnimatedBackground({ isDark, scrollY }) {
           <div
             className="absolute w-88 h-88 rounded-full blur-3xl animate-float-slow"
             style={{
-              background: `radial-gradient(circle, ${isDark ? 'rgba(251, 191, 36, 0.12)' : 'rgba(251, 191, 36, 0.08)'} 0%, transparent 70%)`,
+              background: `radial-gradient(circle, rgba(207, 138, 64, ${isDark ? '0.12' : '0.08'}) 0%, transparent 70%)`,
               bottom: `${Math.max(20, Math.min(50, 40 - progress * 10))}%`,
               right: `${Math.max(10, Math.min(60, 20 + progress * 25))}%`,
               animationDelay: '12s',
@@ -279,16 +289,21 @@ function AnimatedBackground({ isDark, scrollY }) {
   );
 }
 
-// --- COMPONENTE MEJORADO: Tarjeta de Equipo con efecto 3D ---
+// --- COMPONENTE MEJORADO: Tarjeta de Equipo con colores personalizados ---
 function TeamMemberCard({ name, role, imageSrc, description, Icon, isDark }) {
   const [isFlipped, setIsFlipped] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
 
   const cardBaseStyle = 'w-full h-96 rounded-2xl shadow-lg transition-all duration-700 [transform-style:preserve-3d] cursor-pointer group';
   const cardFaceStyle = 'absolute w-full h-full [backface-visibility:hidden] rounded-2xl overflow-hidden flex flex-col items-center justify-center p-6 text-center';
-  const cardFrontBg = isDark ? 'bg-gray-900/90 backdrop-blur-md border-gray-700/50' : 'bg-white/90 backdrop-blur-md border-gray-200/50';
-  const cardBackBg = isDark ? 'bg-gray-800/95 backdrop-blur-md border-gray-700/50' : 'bg-gray-100/95 backdrop-blur-md border-gray-200/50';
-  const iconColor = isDark ? 'text-blue-400' : 'text-blue-600';
+  
+  // Usando colores personalizados para las tarjetas
+  const cardFrontBg = isDark 
+    ? 'bg-gray-900/90 backdrop-blur-md border-gray-700/50' 
+    : 'bg-white/90 backdrop-blur-md border-gray-200/50';
+  const cardBackBg = isDark 
+    ? 'bg-gray-800/95 backdrop-blur-md border-gray-700/50' 
+    : 'bg-gray-100/95 backdrop-blur-md border-gray-200/50';
 
   return (
     <div 
@@ -298,14 +313,22 @@ function TeamMemberCard({ name, role, imageSrc, description, Icon, isDark }) {
       onMouseLeave={() => setIsHovered(false)}
     >
       <div
-        className={`${cardBaseStyle} ${isFlipped ? '[transform:rotateY(180deg)]' : ''} ${isHovered ? 'shadow-2xl shadow-blue-500/20' : ''}`}
+        className={`${cardBaseStyle} ${isFlipped ? '[transform:rotateY(180deg)]' : ''}`}
         style={{
           transform: isHovered && !isFlipped ? 'rotateX(5deg) rotateY(-5deg)' : '',
+          boxShadow: isHovered ? `0 25px 50px -12px rgba(115, 199, 227, 0.3)` : '',
         }}
       >
         {/* Cara Frontal */}
-        <div className={`${cardFaceStyle} ${cardFrontBg} border-2 ${isDark ? 'border-gray-700/50' : 'border-gray-200/50'}`}>
-          <div className={`w-32 h-32 rounded-full overflow-hidden border-4 ${isDark ? 'border-blue-500' : 'border-blue-600'} mb-4 transition-all duration-500 ${isHovered ? 'scale-110 shadow-lg shadow-blue-500/30' : ''}`}>
+        <div className={`${cardFaceStyle} ${cardFrontBg} border-2`} 
+             style={{borderColor: isHovered ? CUSTOM_COLORS.primary : (isDark ? '#374151' : '#e5e7eb')}}>
+          <div 
+            className={`w-32 h-32 rounded-full overflow-hidden border-4 mb-4 transition-all duration-500 ${isHovered ? 'scale-110' : ''}`}
+            style={{
+              borderColor: CUSTOM_COLORS.primary,
+              boxShadow: isHovered ? `0 10px 25px rgba(115, 199, 227, 0.4)` : ''
+            }}
+          >
             <Image
               src={imageSrc}
               alt={`Foto de ${name}`}
@@ -315,19 +338,32 @@ function TeamMemberCard({ name, role, imageSrc, description, Icon, isDark }) {
               onError={(e) => { e.currentTarget.src = `https://placehold.co/128x128/${isDark ? '374151/9ca3af' : 'e5e7eb/4b5563'}?text=${name.charAt(0)}`; }}
             />
           </div>
-          <h3 className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-gray-900'} transition-colors duration-300`}>{name}</h3>
+          <h3 className={`text-2xl font-bold transition-colors duration-300 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+            {name}
+          </h3>
           <div className="flex items-center gap-2 mt-2">
-            {Icon && <Icon className={`w-5 h-5 ${iconColor} transition-all duration-300 ${isHovered ? 'scale-110' : ''}`} />}
-            <p className={`text-md font-semibold ${iconColor}`}>{role}</p>
+            {Icon && <Icon className={`w-5 h-5 transition-all duration-300 ${isHovered ? 'scale-110' : ''}`} 
+                          style={{color: CUSTOM_COLORS.primary}} />}
+            <p className={`text-md font-semibold`} style={{color: CUSTOM_COLORS.primary}}>{role}</p>
           </div>
-          <div className={`mt-4 px-3 py-1 rounded-full text-sm transition-all duration-300 ${isDark ? 'bg-blue-500/10 text-blue-400' : 'bg-blue-500/10 text-blue-600'} ${isHovered ? 'bg-blue-500/20 scale-105' : ''}`}>
+          <div 
+            className={`mt-4 px-3 py-1 rounded-full text-sm transition-all duration-300 ${isHovered ? 'scale-105' : ''}`}
+            style={{
+              backgroundColor: `${CUSTOM_COLORS.primary}20`,
+              color: CUSTOM_COLORS.primary,
+              backgroundColor: isHovered ? `${CUSTOM_COLORS.primary}30` : `${CUSTOM_COLORS.primary}20`
+            }}
+          >
             Toca para saber más
           </div>
         </div>
 
         {/* Cara Trasera */}
-        <div className={`${cardFaceStyle} ${cardBackBg} [transform:rotateY(180deg)] justify-center p-8 border-2 ${isDark ? 'border-gray-700/50' : 'border-gray-200/50'}`}>
-          <h4 className={`text-xl font-semibold mb-4 ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>Sobre {name.split(' ')[0]}</h4>
+        <div className={`${cardFaceStyle} ${cardBackBg} [transform:rotateY(180deg)] justify-center p-8 border-2`}
+             style={{borderColor: isDark ? '#374151' : '#e5e7eb'}}>
+          <h4 className={`text-xl font-semibold mb-4`} style={{color: CUSTOM_COLORS.primary}}>
+            Sobre {name.split(' ')[0]}
+          </h4>
           <p className={`text-base leading-relaxed ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
             {description}
           </p>
@@ -340,59 +376,97 @@ function TeamMemberCard({ name, role, imageSrc, description, Icon, isDark }) {
   );
 }
 
-// --- Componente para Tarjeta de Acceso ---
+// --- Componente para Tarjeta de Acceso con colores personalizados ---
 function AccessCard({ href, title, description, Icon, isDark }) {
   const [isHovered, setIsHovered] = useState(false);
   const cardBg = isDark ? 'bg-gray-900/80 border-gray-700/50' : 'bg-white/80 border-gray-200/50';
-  const titleColor = isDark ? 'text-blue-300' : 'text-blue-700';
-  const descColor = isDark ? 'text-gray-300' : 'text-gray-600';
-  const iconColor = isDark ? 'text-indigo-400' : 'text-indigo-600';
 
   return (
     <Link
       href={href}
-      className={`block border-2 ${cardBg} p-6 rounded-2xl shadow-lg backdrop-blur-lg transition-all duration-500 transform hover:-translate-y-3 hover:shadow-2xl hover:border-blue-400/50 hover:bg-opacity-90 group relative overflow-hidden`}
+      className={`block border-2 ${cardBg} p-6 rounded-2xl shadow-lg backdrop-blur-lg transition-all duration-500 transform hover:-translate-y-3 hover:shadow-2xl group relative overflow-hidden`}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
+      style={{
+        borderColor: isHovered ? CUSTOM_COLORS.primary : (isDark ? '#374151' : '#e5e7eb'),
+        boxShadow: isHovered ? `0 25px 50px -12px rgba(115, 199, 227, 0.25)` : ''
+      }}
     >
       <div className="flex items-center mb-4 relative z-10">
         {Icon && (
-          <div className={`p-2 rounded-lg mr-3 transition-all duration-300 ${isHovered ? 'bg-blue-500/20 scale-110' : 'bg-blue-500/10'}`}>
-            <Icon className={`w-6 h-6 ${iconColor} transition-all duration-300 ${isHovered ? 'scale-110' : ''}`} />
+          <div 
+            className={`p-2 rounded-lg mr-3 transition-all duration-300 ${isHovered ? 'scale-110' : ''}`}
+            style={{
+              backgroundColor: isHovered ? `${CUSTOM_COLORS.primary}30` : `${CUSTOM_COLORS.primary}20`
+            }}
+          >
+            <Icon className={`w-6 h-6 transition-all duration-300 ${isHovered ? 'scale-110' : ''}`} 
+                  style={{color: CUSTOM_COLORS.secondary}} />
           </div>
         )}
-        <h2 className={`text-xl font-semibold ${titleColor} transition-all duration-300 ${isHovered ? 'scale-105' : ''}`}>{title}</h2>
+        <h2 className={`text-xl font-semibold transition-all duration-300 ${isHovered ? 'scale-105' : ''}`}
+            style={{color: CUSTOM_COLORS.dark}}>
+          {title}
+        </h2>
       </div>
-      <p className={`${descColor} text-sm leading-relaxed transition-all duration-300 relative z-10`}>{description}</p>
+      <p className={`text-sm leading-relaxed transition-all duration-300 relative z-10 ${isDark ? 'text-gray-300' : 'text-gray-600'}`}>
+        {description}
+      </p>
       
       {/* Efecto de brillo en hover */}
-      <div className={`absolute inset-0 rounded-2xl bg-gradient-to-r from-blue-500/0 via-blue-500/5 to-blue-500/0 opacity-0 transition-opacity duration-500 ${isHovered ? 'opacity-100' : ''}`} />
+      <div 
+        className={`absolute inset-0 rounded-2xl opacity-0 transition-opacity duration-500 ${isHovered ? 'opacity-100' : ''}`}
+        style={{
+          background: `linear-gradient(135deg, ${CUSTOM_COLORS.primary}05 0%, ${CUSTOM_COLORS.secondary}08 50%, ${CUSTOM_COLORS.primary}05 100%)`
+        }}
+      />
     </Link>
   );
 }
 
-// --- Componente para Tarjeta de Características ---
+// --- Componente para Tarjeta de Características DORADAS ---
 function FeatureCard({ Icon, title, description, isDark }) {
     const [isHovered, setIsHovered] = useState(false);
     const cardBg = isDark ? 'bg-gray-900/90 backdrop-blur-md' : 'bg-white/90 backdrop-blur-md';
-    const titleColor = isDark ? 'text-white' : 'text-gray-900';
-    const descColor = isDark ? 'text-gray-400' : 'text-gray-600';
-    const iconColor = isDark ? 'text-blue-400' : 'text-blue-600';
 
     return (
         <div 
-          className={`border-2 ${isDark ? 'border-gray-800/50' : 'border-gray-200/50'} rounded-2xl p-8 text-center flex flex-col items-center ${cardBg} transition-all duration-500 hover:shadow-2xl hover:-translate-y-3 hover:border-blue-400/50 group relative overflow-hidden`}
+          className={`border-2 rounded-2xl p-8 text-center flex flex-col items-center ${cardBg} transition-all duration-500 hover:shadow-2xl hover:-translate-y-3 group relative overflow-hidden`}
           onMouseEnter={() => setIsHovered(true)}
           onMouseLeave={() => setIsHovered(false)}
+          style={{
+            borderColor: isHovered ? CUSTOM_COLORS.gold : (isDark ? '#374151' : '#e5e7eb'),
+            boxShadow: isHovered ? `0 25px 50px -12px rgba(207, 138, 64, 0.3)` : '',
+            background: isHovered 
+              ? (isDark ? `linear-gradient(135deg, rgba(207, 138, 64, 0.1) 0%, rgba(46, 74, 112, 0.05) 100%)` 
+                        : `linear-gradient(135deg, rgba(207, 138, 64, 0.08) 0%, rgba(255, 249, 240, 0.95) 100%)`)
+              : cardBg
+          }}
         >
             {/* Efecto de ondas en hover */}
-            <div className={`absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-purple-500/5 opacity-0 transition-opacity duration-700 ${isHovered ? 'opacity-100' : ''}`} />
+            <div 
+              className={`absolute inset-0 opacity-0 transition-opacity duration-700 ${isHovered ? 'opacity-100' : ''}`}
+              style={{
+                background: `radial-gradient(circle at center, ${CUSTOM_COLORS.gold}15 0%, transparent 70%)`
+              }}
+            />
             
-            <div className={`mb-6 p-4 rounded-full transition-all duration-500 ${isHovered ? 'bg-blue-500/20 scale-110 shadow-lg shadow-blue-500/30' : 'bg-blue-500/10'} relative z-10`}>
-                <Icon className={`w-10 h-10 ${iconColor} transition-all duration-500 ${isHovered ? 'scale-110' : ''}`} />
+            <div 
+              className={`mb-6 p-4 rounded-full transition-all duration-500 ${isHovered ? 'scale-110' : ''} relative z-10`}
+              style={{
+                backgroundColor: isHovered ? `${CUSTOM_COLORS.gold}30` : `${CUSTOM_COLORS.gold}20`,
+                boxShadow: isHovered ? `0 10px 25px rgba(207, 138, 64, 0.4)` : ''
+              }}
+            >
+                <Icon className={`w-10 h-10 transition-all duration-500 ${isHovered ? 'scale-110' : ''}`} 
+                      style={{color: CUSTOM_COLORS.gold}} />
             </div>
-            <h3 className={`text-2xl font-bold mb-3 ${titleColor} transition-all duration-300 ${isHovered ? 'scale-105' : ''} relative z-10`}>{title}</h3>
-            <p className={`${descColor} leading-relaxed transition-all duration-300 relative z-10`}>{description}</p>
+            <h3 className={`text-2xl font-bold mb-3 transition-all duration-300 ${isHovered ? 'scale-105' : ''} relative z-10 ${isDark ? 'text-white' : 'text-gray-900'}`}>
+              {title}
+            </h3>
+            <p className={`leading-relaxed transition-all duration-300 relative z-10 ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+              {description}
+            </p>
         </div>
     );
 }
@@ -417,7 +491,6 @@ export default function UserHomePage() {
         },
         (error) => {
           console.log('Error obteniendo ubicación:', error);
-          // Mantener Cochabamba como fallback
           setLocation({
             latitude: -17.39,
             longitude: -66.16,
@@ -426,7 +499,6 @@ export default function UserHomePage() {
         }
       );
     } else {
-      // Fallback a Cochabamba
       setLocation({
         latitude: -17.39,
         longitude: -66.16,
@@ -446,14 +518,12 @@ export default function UserHomePage() {
   useEffect(() => {
     const handleScroll = () => {
       const scrollPosition = window.scrollY;
-      // Validar que scrollPosition sea un número válido
       if (isFinite(scrollPosition) && scrollPosition >= 0) {
         setScrollY(scrollPosition);
       }
     };
 
     window.addEventListener('scroll', handleScroll);
-    // Actualizar inmediatamente
     handleScroll();
     
     return () => window.removeEventListener('scroll', handleScroll);
@@ -490,10 +560,10 @@ export default function UserHomePage() {
 
   if (!isLoaded) {
     return (
-      <section className="min-h-screen flex items-center justify-center bg-black">
+      <section className="min-h-screen flex items-center justify-center" style={{backgroundColor: CUSTOM_COLORS.background}}>
         <div className="flex flex-col items-center gap-4">
-          <Loader className="w-12 h-12 animate-spin text-blue-500" />
-          <p className="text-white">Cargando experiencia...</p>
+          <Loader className="w-12 h-12 animate-spin" style={{color: CUSTOM_COLORS.primary}} />
+          <p style={{color: CUSTOM_COLORS.dark}}>Cargando experiencia...</p>
         </div>
       </section>
     );
@@ -521,33 +591,57 @@ export default function UserHomePage() {
                   {weatherDetails && (
                     <>
                       <div className="flex items-center gap-2 transition-all duration-300 hover:scale-105" title={weatherDetails.description}>
-                        <span className="text-yellow-300 animate-pulse">{weatherDetails.icon}</span>
+                        <span style={{color: CUSTOM_COLORS.gold}} className="animate-pulse">{weatherDetails.icon}</span>
                         <span>{Math.round(weatherData.current.temperature_2m)}°C</span>
                       </div>
                       <div className="w-px h-4 bg-gray-500 hidden sm:block"></div>
                     </>
                   )}
                   <div className="flex items-center gap-2 transition-all duration-300 hover:scale-105">
-                    <MapPin size={16} className="text-blue-400"/>
-                    <span className="text-blue-400">{location.city}</span>
+                    <MapPin size={16} style={{color: CUSTOM_COLORS.primary}}/>
+                    <span style={{color: CUSTOM_COLORS.primary}}>{location.city}</span>
                   </div>
                   <div className="w-px h-4 bg-gray-500 hidden sm:block"></div>
                   <div className="flex items-center gap-2 transition-all duration-300 hover:scale-105">
-                    <Clock size={16} className="text-green-400"/>
-                    <span className="text-green-400">{currentTime}</span>
+                    <Clock size={16} style={{color: CUSTOM_COLORS.secondary}}/>
+                    <span style={{color: CUSTOM_COLORS.secondary}}>{currentTime}</span>
                   </div>
               </div>
 
               <h1 className="text-5xl md:text-7xl lg:text-8xl font-bold tracking-tighter leading-tight mb-4 text-shadow-lg animate-slide-up-delay-1">
                 BIENVENIDO A DOCTEMIA MC <br/> 
-                <span className="bg-gradient-to-r from-blue-400 via-purple-500 to-blue-600 bg-clip-text text-transparent animate-gradient">
+                <span 
+                  className="bg-clip-text text-transparent animate-gradient"
+                  style={{
+                    backgroundImage: `linear-gradient(45deg, ${CUSTOM_COLORS.primary}, ${CUSTOM_COLORS.secondary}, ${CUSTOM_COLORS.gold})`,
+                    backgroundSize: '200% 200%'
+                  }}
+                >
                   Aprendizaje Médico
                 </span>.
               </h1>
               <p className="text-lg md:text-xl max-w-2xl mx-auto text-gray-300 mb-8 animate-slide-up-delay-2">
-                Hola, <span className="font-semibold text-white bg-blue-500/20 px-2 py-1 rounded-md">{user?.fullName || user?.email || 'Usuario'}</span>. listo para prepararte...
+                Hola, <span 
+                  className="font-semibold text-white px-2 py-1 rounded-md" 
+                  style={{backgroundColor: `${CUSTOM_COLORS.primary}40`}}
+                >
+                  {user?.fullName || user?.email || 'Usuario'}
+                </span>. listo para prepararte...
               </p>
-              <a href="#introduccion" className="inline-flex items-center justify-center px-8 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-full text-lg font-semibold transition-all duration-500 transform hover:scale-110 shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 animate-slide-up-delay-3 group">
+              <a 
+                href="#introduccion" 
+                className="inline-flex items-center justify-center px-8 py-3 rounded-full text-lg font-semibold transition-all duration-500 transform hover:scale-110 shadow-lg animate-slide-up-delay-3 group"
+                style={{
+                  background: `linear-gradient(45deg, ${CUSTOM_COLORS.primary}, ${CUSTOM_COLORS.secondary})`,
+                  boxShadow: `0 10px 25px rgba(115, 199, 227, 0.3)`
+                }}
+                onMouseEnter={(e) => {
+                  e.target.style.boxShadow = `0 15px 35px rgba(115, 199, 227, 0.5)`;
+                }}
+                onMouseLeave={(e) => {
+                  e.target.style.boxShadow = `0 10px 25px rgba(115, 199, 227, 0.3)`;
+                }}
+              >
                 Descubre Más
                 <ArrowRight className="ml-2 w-5 h-5 transition-transform duration-300 group-hover:translate-x-1" />
               </a>
@@ -564,31 +658,25 @@ export default function UserHomePage() {
         {/* --- SECCIÓN 2: VIDEO DE INTRODUCCIÓN --- */}
         <section id="introduccion" className="w-full py-24 md:py-32 bg-transparent">
           <div className="max-w-4xl mx-auto text-center px-4">
-              <h2 className="text-4xl md:text-5xl font-bold tracking-tighter animate-fade-in-up">Tu vocación. Necesita una buena prepararación.</h2>
+              <h2 className="text-4xl md:text-5xl font-bold tracking-tighter animate-fade-in-up">
+                Tu vocación. Necesita una buena prepararación.
+              </h2>
               <p className={`mt-4 text-lg md:text-xl ${secondaryTextColor} max-w-3xl mx-auto animate-fade-in-up-delay`}>
                 Clases claras. Casos reales. Simulacros tipo examen.
-Hecho por médicos jóvenes, para quienes se preparan con vocación.
-Estudia lo que cae. Aprende lo que importa.
-Desde donde quieras, cuando quieras.
+                Hecho por médicos jóvenes, para quienes se preparan con vocación.
+                Estudia lo que cae. Aprende lo que importa.
+                Desde donde quieras, cuando quieras.
               </p>
-          </div>
-          <div className="w-full mt-12 animate-fade-in-up-delay-2">
-            <div className={`w-full max-w-6xl mx-auto aspect-video rounded-2xl overflow-hidden shadow-2xl border-2 ${isDark ? 'border-blue-500/30 bg-black/20' : 'border-gray-200/50 bg-white/20'} p-2 backdrop-blur-sm transition-all duration-500 hover:shadow-blue-500/20 hover:scale-[1.02] group`}>
-              <video
-                src="/videos/video3.mp4"
-                controls
-                playsInline
-                className="w-full h-full object-cover rounded-lg transition-all duration-500 group-hover:brightness-110"
-              />
-            </div>
           </div>
         </section>
 
-        {/* --- SECCIÓN 3: NUESTRA METODOLOGÍA --- */}
+        {/* --- SECCIÓN 3: NUESTRA METODOLOGÍA CON TARJETAS DORADAS --- */}
         <section id="metodologia" className="py-24 md:py-32 bg-transparent">
           <div className="max-w-7xl mx-auto px-6 lg:px-8">
               <div className="text-center mb-16">
-                  <h2 className="text-4xl md:text-5xl font-bold tracking-tighter animate-fade-in-up">Una Metodología Diseñada para Ti</h2>
+                  <h2 className="text-4xl md:text-5xl font-bold tracking-tighter animate-fade-in-up">
+                    Una Metodología Diseñada para Ti
+                  </h2>
                   <p className={`mt-4 text-lg md:text-xl max-w-3xl mx-auto ${secondaryTextColor} animate-fade-in-up-delay`}>
                       Combinamos ciencia, tecnología y pedagogía para asegurar tu éxito.
                   </p>
@@ -626,7 +714,9 @@ Desde donde quieras, cuando quieras.
         <section id="equipo" className="py-24 md:py-32 bg-transparent">
           <div className="max-w-7xl mx-auto px-6 lg:px-8">
               <div className="text-center mb-16">
-                <h2 className="text-4xl md:text-5xl font-bold tracking-tighter animate-fade-in-up">Guiado por Expertos</h2>
+                <h2 className="text-4xl md:text-5xl font-bold tracking-tighter animate-fade-in-up">
+                  Guiado por Expertos
+                </h2>
                 <p className={`mt-4 text-lg md:text-xl max-w-3xl mx-auto ${secondaryTextColor} animate-fade-in-up-delay`}>
                   Profesionales apasionados y dedicados a potenciar tu carrera médica.
                 </p>
@@ -654,10 +744,21 @@ Desde donde quieras, cuando quieras.
                 </div>
                 <div className="animate-fade-in-up" style={{animationDelay: '0.3s'}}>
                   <TeamMemberCard
-                    name="Chompi"
-                    role="Doctor e Instructor"
+                    name="Pablo Aparicio Verdun"
+                    role="Medico"
                     imageSrc="/images/chompi.png"
-                    description="Experto clínico con una pasión por la enseñanza. Aporta años de experiencia práctica al aula virtual, ofreciendo insights valiosos y aplicables a tu carrera médica."
+                    description="Médico con formación en educación superior. Combino la práctica clínica con la docencia, ayudando a estudiantes a prepararse para el examen de grado con enfoque en criterio, claridad y confianza."
+                    Icon={Stethoscope}
+                    isDark={isDark}
+                  />
+                </div>
+
+                <div className="animate-fade-in-up" style={{animationDelay: '0.3s'}}>
+                  <TeamMemberCard
+                    name="Carolina Paz Rojas"
+                    role="Medico"
+                    imageSrc="/images/ciru.png"
+                    description="Médico cirujano con experiencia clínica y vocación docente. Me dedico a la formación de pregrado y preparación para el Examen de Grado, con un enfoque claro, estructurado y centrado en el razonamiento clínico."
                     Icon={Stethoscope}
                     isDark={isDark}
                   />
@@ -669,12 +770,23 @@ Desde donde quieras, cuando quieras.
         {/* --- SECCIÓN 5: ACCESOS RÁPIDOS --- */}
         <section id="explora" className="py-24 md:py-32 relative overflow-hidden bg-transparent">
           <div className="absolute inset-0 z-0">
-              <div className={`absolute w-96 h-96 bg-blue-900/20 rounded-full -top-32 -left-32 blur-3xl animate-pulse`}></div>
-              <div className={`absolute w-96 h-96 bg-purple-900/20 rounded-full -bottom-32 -right-32 blur-3xl animate-pulse`} style={{animationDelay: '2s'}}></div>
+              <div 
+                className="absolute w-96 h-96 rounded-full -top-32 -left-32 blur-3xl animate-pulse"
+                style={{backgroundColor: `${CUSTOM_COLORS.primary}20`}}
+              ></div>
+              <div 
+                className="absolute w-96 h-96 rounded-full -bottom-32 -right-32 blur-3xl animate-pulse" 
+                style={{
+                  backgroundColor: `${CUSTOM_COLORS.gold}20`,
+                  animationDelay: '2s'
+                }}
+              ></div>
           </div>
           <div className="max-w-7xl mx-auto px-6 lg:px-8 relative z-10">
             <div className="text-center mb-16">
-              <h2 className="text-4xl md:text-5xl font-bold tracking-tighter animate-fade-in-up">Tu Centro de Mando</h2>
+              <h2 className="text-4xl md:text-5xl font-bold tracking-tighter animate-fade-in-up">
+                Tu Centro de Mando
+              </h2>
               <p className={`mt-4 text-lg md:text-xl max-w-2xl mx-auto ${secondaryTextColor} animate-fade-in-up-delay`}>
                 Accede a todas las herramientas que necesitas para triunfar.
               </p>
@@ -693,8 +805,17 @@ Desde donde quieras, cuando quieras.
         </section>
       </div>
 
-      {/* Estilos CSS personalizados para animaciones */}
+      {/* Estilos CSS personalizados para animaciones con colores personalizados */}
       <style jsx global>{`
+        :root {
+          --custom-primary: ${CUSTOM_COLORS.primary};
+          --custom-background: ${CUSTOM_COLORS.background};
+          --custom-secondary: ${CUSTOM_COLORS.secondary};
+          --custom-neutral: ${CUSTOM_COLORS.neutral};
+          --custom-dark: ${CUSTOM_COLORS.dark};
+          --custom-gold: ${CUSTOM_COLORS.gold};
+        }
+
         @keyframes fade-in {
           from { opacity: 0; }
           to { opacity: 1; }
@@ -723,8 +844,21 @@ Desde donde quieras, cuando quieras.
         }
 
         @keyframes gradient {
-          0%, 100% { background-position: 0% 50%; }
-          50% { background-position: 100% 50%; }
+          0%, 100% { 
+            background-position: 0% 50%; 
+          }
+          50% { 
+            background-position: 100% 50%; 
+          }
+        }
+
+        @keyframes shimmer {
+          0% {
+            background-position: -200px 0;
+          }
+          100% {
+            background-position: calc(200px + 100%) 0;
+          }
         }
 
         .animate-fade-in {
@@ -760,6 +894,17 @@ Desde donde quieras, cuando quieras.
           animation: gradient 3s ease infinite;
         }
 
+        .animate-shimmer {
+          background: linear-gradient(
+            90deg,
+            var(--custom-gold) 0%,
+            var(--custom-primary) 50%,
+            var(--custom-gold) 100%
+          );
+          background-size: 200px 100%;
+          animation: shimmer 2s infinite;
+        }
+
         .text-shadow-lg {
           text-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
         }
@@ -769,22 +914,24 @@ Desde donde quieras, cuando quieras.
           scroll-behavior: smooth;
         }
 
-        /* Personalización del scrollbar */
+        /* Personalización del scrollbar con colores personalizados */
         ::-webkit-scrollbar {
           width: 8px;
         }
 
         ::-webkit-scrollbar-track {
-          background: rgba(0, 0, 0, 0.1);
+          background: rgba(240, 242, 242, 0.3);
         }
 
         ::-webkit-scrollbar-thumb {
-          background: rgba(59, 130, 246, 0.5);
+          background: var(--custom-primary);
           border-radius: 4px;
+          opacity: 0.5;
         }
 
         ::-webkit-scrollbar-thumb:hover {
-          background: rgba(59, 130, 246, 0.7);
+          background: var(--custom-secondary);
+          opacity: 0.8;
         }
 
         /* Animaciones adicionales para elementos interactivos */
@@ -796,12 +943,46 @@ Desde donde quieras, cuando quieras.
           transform: translateX(0.25rem);
         }
 
+        /* Efecto de brillo dorado para tarjetas especiales */
+        .golden-glow {
+          box-shadow: 0 0 20px rgba(207, 138, 64, 0.3);
+          border: 1px solid var(--custom-gold);
+        }
+
+        .golden-glow:hover {
+          box-shadow: 0 0 30px rgba(207, 138, 64, 0.5);
+          transform: translateY(-5px);
+        }
+
+        /* Efectos de partículas personalizadas */
+        .particle-system {
+          position: relative;
+          overflow: hidden;
+        }
+
+        .particle-system::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: 0;
+          width: 100%;
+          height: 100%;
+          background: radial-gradient(circle, var(--custom-primary) 1px, transparent 1px);
+          background-size: 50px 50px;
+          opacity: 0.1;
+          animation: float-slow 20s linear infinite;
+        }
+
         /* Mejoras en la responsividad */
         @media (max-width: 768px) {
           .animate-slide-up-delay-1,
           .animate-slide-up-delay-2,
           .animate-slide-up-delay-3 {
             animation-delay: 0s;
+          }
+
+          .golden-glow {
+            box-shadow: 0 0 15px rgba(207, 138, 64, 0.2);
           }
         }
 
@@ -814,12 +995,78 @@ Desde donde quieras, cuando quieras.
         /* Efectos adicionales para el fondo */
         body {
           overflow-x: hidden;
+          background-color: var(--custom-background);
         }
 
-        /* Mejora en las transiciones de colores */
+        /* Mejora en las transiciones de colores personalizados */
         * {
           transition-property: color, background-color, border-color, text-decoration-color, fill, stroke, opacity, box-shadow, transform, filter, backdrop-filter;
           transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Efectos de animación para texto con colores personalizados */
+        .text-glow {
+          text-shadow: 0 0 10px var(--custom-primary);
+        }
+
+        .text-gold-glow {
+          text-shadow: 0 0 10px var(--custom-gold);
+        }
+
+        /* Patrones de fondo personalizados */
+        .custom-pattern {
+          background-image: 
+            radial-gradient(circle at 25px 25px, var(--custom-primary) 2%, transparent 0%),
+            radial-gradient(circle at 75px 75px, var(--custom-secondary) 2%, transparent 0%);
+          background-size: 100px 100px;
+          opacity: 0.05;
+        }
+
+        /* Efectos hover mejorados */
+        .hover-lift {
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .hover-lift:hover {
+          transform: translateY(-8px);
+          box-shadow: 0 20px 40px rgba(115, 199, 227, 0.2);
+        }
+
+        /* Animaciones de entrada escalonadas */
+        .stagger-1 { animation-delay: 0.1s; }
+        .stagger-2 { animation-delay: 0.2s; }
+        .stagger-3 { animation-delay: 0.3s; }
+        .stagger-4 { animation-delay: 0.4s; }
+
+        /* Efectos de botones personalizados */
+        .btn-custom {
+          background: linear-gradient(135deg, var(--custom-primary), var(--custom-secondary));
+          border: none;
+          color: white;
+          font-weight: 600;
+          letter-spacing: 0.5px;
+          position: relative;
+          overflow: hidden;
+        }
+
+        .btn-custom::before {
+          content: '';
+          position: absolute;
+          top: 0;
+          left: -100%;
+          width: 100%;
+          height: 100%;
+          background: linear-gradient(135deg, var(--custom-gold), var(--custom-primary));
+          transition: left 0.3s ease;
+        }
+
+        .btn-custom:hover::before {
+          left: 0;
+        }
+
+        .btn-custom span {
+          position: relative;
+          z-index: 1;
         }
       `}</style>
     </div>
