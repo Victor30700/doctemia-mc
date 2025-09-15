@@ -721,17 +721,19 @@ export default function UserHomePage() {
                   Profesionales apasionados y dedicados a potenciar tu carrera médica.
                 </p>
               </div>
+
               <div className="grid gap-12 md:grid-cols-2 lg:grid-cols-3">
                 <div className="animate-fade-in-up" style={{animationDelay: '0.1s'}}>
                   <TeamMemberCard
-                    name="Victor H."
+                    name="< DV />"
                     role="Creador y Desarrollador"
-                    imageSrc="/images/victor.png"
-                    description="Mente maestra detrás de la plataforma. Como desarrollador Full-Stack, se encarga de que tu experiencia de aprendizaje sea fluida, intuitiva y tecnológicamente avanzada."
+                    imageSrc="/images/logo.jpg"
+                    description="La plataforma fue creada por Victor Hugo Saldaña Ortiz y Daniel Mancilla Tejerina, desarrolladores Full-Stack responsables de diseñar e implementar una experiencia de aprendizaje en línea intuitiva, eficiente y de alto nivel tecnológico. Perfil en Linkedind: victor hugo saldaña ortiz: www.linkedin.com/in/victor-hugo-saldana-ortiz-372a35271 Daniel mancilla tejerina: http://www.linkedin.com/in/daniel-mancilla-tejerina-126b07307"
                     Icon={BrainCircuit}
                     isDark={isDark}
                   />
                 </div>
+                
                 <div className="animate-fade-in-up" style={{animationDelay: '0.2s'}}>
                   <TeamMemberCard
                     name="Maria Jose Loaiza Marquez."
