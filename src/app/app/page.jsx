@@ -13,8 +13,9 @@ import {
   Video,
   UserCircle,
   Clock, Cloud, CloudSun, Cloudy, CloudRain, CloudSnow, CloudLightning, Loader,
-  BookMarked, Sun, ArrowRight, PlayCircle, BrainCircuit, Stethoscope, Target, Zap, Award, MapPin
+  BookMarked, Sun, ArrowRight, PlayCircle, BrainCircuit, Stethoscope, Target, Zap, Award, MapPin,  
 } from 'lucide-react';
+import { Linkedin } from 'lucide-react';
 
 // Paleta de colores personalizada
 const CUSTOM_COLORS = {
@@ -711,63 +712,109 @@ export default function UserHomePage() {
         </section>
 
         {/* --- SECCIÓN 4: CONOCE AL EQUIPO --- */}
-        <section id="equipo" className="py-24 md:py-32 bg-transparent">
-          <div className="max-w-7xl mx-auto px-6 lg:px-8">
-              <div className="text-center mb-16">
-                <h2 className="text-4xl md:text-5xl font-bold tracking-tighter animate-fade-in-up">
-                  Guiado por Expertos
-                </h2>
-                <p className={`mt-4 text-lg md:text-xl max-w-3xl mx-auto ${secondaryTextColor} animate-fade-in-up-delay`}>
-                  Profesionales apasionados y dedicados a potenciar tu carrera médica.
+<section id="equipo" className="py-24 md:py-32 bg-transparent">
+  <div className="max-w-7xl mx-auto px-6 lg:px-8">
+    <div className="text-center mb-16">
+      <h2 className="text-4xl md:text-5xl font-bold tracking-tighter animate-fade-in-up">
+        Guiado por Expertos
+      </h2>
+      <p className={`mt-4 text-lg md:text-xl max-w-3xl mx-auto ${secondaryTextColor} animate-fade-in-up-delay`}>
+        Profesionales apasionados y dedicados a potenciar tu carrera médica.
+      </p>
+    </div>
+
+    {/* Contenedor de la grilla principal para todas las tarjetas */}
+    <div className="grid gap-12 md:grid-cols-2 lg:grid-cols-3">
+      
+      {/* Tarjeta de los médicos */}
+      <div className="animate-fade-in-up" style={{ animationDelay: '0.2s' }}>
+        <TeamMemberCard
+          name="Maria Jose Loaiza Marquez."
+          role="Medico"
+          imageSrc="/images/majo.png"
+          description="Médico especialista y educadora por vocación. Transforma temas médicos complejos en lecciones claras y memorables, preparándote para los desafíos del mundo real."
+          Icon={Stethoscope}
+          isDark={isDark}
+        />
+      </div>
+      <div className="animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
+        <TeamMemberCard
+          name="Pablo Aparicio Verdun"
+          role="Medico"
+          imageSrc="/images/chompi.png"
+          description="Médico con formación en educación superior. Combino la práctica clínica con la docencia, ayudando a estudiantes a prepararse para el examen de grado con enfoque en criterio, claridad y confianza."
+          Icon={Stethoscope}
+          isDark={isDark}
+        />
+      </div>
+      <div className="animate-fade-in-up" style={{ animationDelay: '0.3s' }}>
+        <TeamMemberCard
+          name="Carolina Paz Rojas"
+          role="Medico"
+          imageSrc="/images/ciru.png"
+          description="Médico cirujano con experiencia clínica y vocación docente. Me dedico a la formación de pregrado y preparación para el Examen de Grado, con un enfoque claro, estructurado y centrado en el razonamiento clínico."
+          Icon={Stethoscope}
+          isDark={isDark}
+        />
+      </div>
+
+      {/* Tarjeta de Creadores y Desarrolladores, ahora centrada en la grilla */}
+      {/* Las clases `col-span-1 md:col-span-2 lg:col-span-3` hacen que ocupe todo el ancho de la grilla en diferentes tamaños de pantalla */}
+      <div className="animate-fade-in-up col-span-1 md:col-span-2 lg:col-span-3 flex justify-center" style={{ animationDelay: '0.1s' }}>
+        <div 
+          className={`w-full max-w-2xl rounded-2xl shadow-lg transition-all duration-300 transform hover:scale-105 ${isDark ? 'bg-gray-900/90 backdrop-blur-md border border-gray-700/50' : 'bg-white/90 backdrop-blur-md border border-gray-200/50'}`}
+        >
+          <div className="p-6 flex flex-col md:flex-row items-center justify-center text-center md:text-left">
+            <div className="flex-shrink-0 mb-6 md:mb-0 md:mr-6">
+              <div 
+                className="w-32 h-32 rounded-full overflow-hidden border-4 border-dashed" 
+                style={{ borderColor: CUSTOM_COLORS.primary }}
+              >
+                <Image
+                  src="/images/logo.jpg"
+                  alt="Logo del equipo de desarrollo"
+                  width={128}
+                  height={128}
+                  className="object-cover w-full h-full"
+                />
+              </div>
+            </div>
+            <div className="flex-grow">
+              <div className="flex flex-col items-center md:items-start">
+                <h3 className={`text-2xl font-bold tracking-tighter ${isDark ? 'text-white' : 'text-gray-900'}`}>
+                  Creadores y Desarrolladores
+                </h3>
+                <p className={`mt-2 text-base font-medium ${isDark ? 'text-gray-300' : 'text-gray-700'}`}>
+                  La plataforma fue creada por Victor Hugo Saldaña Ortiz y Daniel Mancilla Tejerina, desarrolladores Full-Stack responsables de diseñar e implementar una experiencia de aprendizaje en línea intuitiva, eficiente y de alto nivel tecnológico.
                 </p>
               </div>
-
-              <div className="grid gap-12 md:grid-cols-2 lg:grid-cols-3">
-                <div className="animate-fade-in-up" style={{animationDelay: '0.1s'}}>
-                  <TeamMemberCard
-                    name="< DV />"
-                    role="Creador y Desarrollador"
-                    imageSrc="/images/logo.jpg"
-                    description="La plataforma fue creada por Victor Hugo Saldaña Ortiz y Daniel Mancilla Tejerina, desarrolladores Full-Stack responsables de diseñar e implementar una experiencia de aprendizaje en línea intuitiva, eficiente y de alto nivel tecnológico. Perfil en Linkedind: victor hugo saldaña ortiz: www.linkedin.com/in/victor-hugo-saldana-ortiz-372a35271 Daniel mancilla tejerina: http://www.linkedin.com/in/daniel-mancilla-tejerina-126b07307"
-                    Icon={BrainCircuit}
-                    isDark={isDark}
-                  />
-                </div>
-                
-                <div className="animate-fade-in-up" style={{animationDelay: '0.2s'}}>
-                  <TeamMemberCard
-                    name="Maria Jose Loaiza Marquez."
-                    role="Medico"
-                    imageSrc="/images/majo.png"
-                    description="Médico especialista y educadora por vocación. Transforma temas médicos complejos en lecciones claras y memorables, preparándote para los desafíos del mundo real."
-                    Icon={Stethoscope}
-                    isDark={isDark}
-                  />
-                </div>
-                <div className="animate-fade-in-up" style={{animationDelay: '0.3s'}}>
-                  <TeamMemberCard
-                    name="Pablo Aparicio Verdun"
-                    role="Medico"
-                    imageSrc="/images/chompi.png"
-                    description="Médico con formación en educación superior. Combino la práctica clínica con la docencia, ayudando a estudiantes a prepararse para el examen de grado con enfoque en criterio, claridad y confianza."
-                    Icon={Stethoscope}
-                    isDark={isDark}
-                  />
-                </div>
-
-                <div className="animate-fade-in-up" style={{animationDelay: '0.3s'}}>
-                  <TeamMemberCard
-                    name="Carolina Paz Rojas"
-                    role="Medico"
-                    imageSrc="/images/ciru.png"
-                    description="Médico cirujano con experiencia clínica y vocación docente. Me dedico a la formación de pregrado y preparación para el Examen de Grado, con un enfoque claro, estructurado y centrado en el razonamiento clínico."
-                    Icon={Stethoscope}
-                    isDark={isDark}
-                  />
-                </div>
+              <div className="mt-6 flex flex-wrap justify-center md:justify-start gap-4">
+                <Link href="https://www.linkedin.com/in/victor-hugo-saldana-ortiz-372a35271" target="_blank" rel="noopener noreferrer" className="group">
+                  <div 
+                    className={`flex items-center gap-2 text-sm font-semibold p-2 rounded-full transition-all duration-300 hover:scale-105`}
+                    style={{ backgroundColor: `${CUSTOM_COLORS.primary}20`, color: CUSTOM_COLORS.primary }}
+                  >
+                    <Linkedin className="w-4 h-4 transition-transform duration-300 group-hover:rotate-12" />
+                    <span>Victor Hugo Saldaña Ortiz</span>
+                  </div>
+                </Link>
+                <Link href="http://www.linkedin.com/in/daniel-mancilla-tejerina-126b07307" target="_blank" rel="noopener noreferrer" className="group">
+                  <div 
+                    className={`flex items-center gap-2 text-sm font-semibold p-2 rounded-full transition-all duration-300 hover:scale-105`}
+                    style={{ backgroundColor: `${CUSTOM_COLORS.primary}20`, color: CUSTOM_COLORS.primary }}
+                  >
+                    <Linkedin className="w-4 h-4 transition-transform duration-300 group-hover:rotate-12" />
+                    <span>Daniel Mancilla Tejerina</span>
+                  </div>
+                </Link>
               </div>
+            </div>
           </div>
-        </section>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
 
         {/* --- SECCIÓN 5: ACCESOS RÁPIDOS --- */}
         <section id="explora" className="py-24 md:py-32 relative overflow-hidden bg-transparent">
