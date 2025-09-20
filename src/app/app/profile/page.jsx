@@ -15,8 +15,8 @@ import { User, Lock, Save, Eye, EyeOff, Calendar, Phone, Building, Briefcase, Gr
 
 // Paleta de colores
 const COLORS = {
-  primary: '#24B0BA',      // Turquesa principal
-  secondary: '#73C7E3',    // Azul claro
+  primary: '#014ba0',      // Turquesa principal
+  secondary: '#014ba0',    // Azul oscuro
   accent: '#CF8A40',       // Naranja/Dorado
   dark: '#2E4A70',         // Azul oscuro
   neutral: '#F0F2F2',      // Gris claro
@@ -221,7 +221,7 @@ export default function ProfilePage() {
           background: isDark ? '#1f2937' : '#ffffff',
           color: isDark ? '#f9fafb' : COLORS.dark,
           inputAttributes: {
-            style: `border: 1px solid ${COLORS.secondary}; border-radius: 8px; padding: 8px;`
+            style: `border: 1px solid #014ba0; border-radius: 8px; padding: 8px;`
           }
         });
         if (pwd) {
@@ -296,7 +296,7 @@ export default function ProfilePage() {
 
   const getInputStyles = (isDark) => ({
     backgroundColor: isDark ? '#374151' : 'white',
-    borderColor: COLORS.secondary,
+    borderColor: '#014ba0',
     color: isDark ? '#f9fafb' : COLORS.dark,
     borderWidth: '1px',
     borderRadius: '12px'
@@ -308,7 +308,7 @@ export default function ProfilePage() {
     borderRadius: '20px',
     boxShadow: isDark 
       ? `0 10px 40px rgba(0,0,0,0.3)` 
-      : `0 10px 40px ${COLORS.secondary}20`
+      : `0 10px 40px rgba(1, 75, 160, 0.12)`
   });
 
   return (
@@ -320,7 +320,7 @@ export default function ProfilePage() {
       <div 
         className="p-6 pb-8"
         style={{ 
-          background: `linear-gradient(135deg, ${COLORS.primary} 0%, ${COLORS.secondary} 100%)`,
+          background: `linear-gradient(135deg, ${COLORS.primary} 0%, #014ba0 100%)`,
         }}
       >
         <div className="max-w-4xl mx-auto">
@@ -389,7 +389,7 @@ export default function ProfilePage() {
                     className="w-full px-4 py-3 focus:outline-none focus:ring-2 transition-all"
                     style={{
                       ...getInputStyles(isDark),
-                      focusRingColor: COLORS.primary
+                      '--tw-ring-color': '#014ba0'
                     }}
                     placeholder="Ingresa tu nombre completo"
                     required

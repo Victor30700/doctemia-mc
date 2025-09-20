@@ -44,7 +44,7 @@ const AccessDeniedScreen = ({ user, isDark, swalTheme }) => {
                 <div class="text-left space-y-4 p-4" style="color: ${isDark ? '#F0F2F2' : '#2E4A70'};">
                     <p class="text-center">Para acceder a esta sección, necesitas el acceso de Pago Único. Completa el pago usando el QR y luego contáctanos por WhatsApp para una activación inmediata.</p>
                     <div class="flex justify-center my-4">
-                        ${contactInfo.qrUrl ? `<img src="${contactInfo.qrUrl}" alt="Código QR de Pago" class="w-48 h-48 rounded-lg" style="border: 2px solid ${isDark ? '#2E4A70' : '#73C7E3'};"/>` : '<p>Código QR no disponible.</p>'}
+                        ${contactInfo.qrUrl ? `<img src="${contactInfo.qrUrl}" alt="Código QR de Pago" class="w-48 h-48 rounded-lg" style="border: 2px solid ${isDark ? '#2E4A70' : '#014ba0'};"/>` : '<p>Código QR no disponible.</p>'}
                     </div>
                     <p class="text-center font-semibold">¿Ya pagaste?</p>
                     <a id="whatsapp-link" href="https://api.whatsapp.com/send?phone=${contactInfo.adminPhone}&text=${encodeURIComponent(`Hola ${NOMBRE_NEGOCIO}, soy ${user.name || user.displayName}. Acabo de realizar el pago para el acceso de PAGO ÚNICO. Adjunto mi comprobante.`)}" target="_blank" style="display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; background-color: #24B0BA; color: white; font-weight: bold; padding: 12px 16px; border-radius: 8px; text-decoration: none; transition: all 0.3s;">
@@ -52,11 +52,11 @@ const AccessDeniedScreen = ({ user, isDark, swalTheme }) => {
                         Contactar por WhatsApp
                     </a>
                     <div class="relative my-4">
-                        <div class="absolute inset-0 flex items-center"><span class="w-full" style="border-top: 1px solid ${isDark ? '#2E4A70' : '#73C7E3'};"></span></div>
+                        <div class="absolute inset-0 flex items-center"><span class="w-full" style="border-top: 1px solid ${isDark ? '#2E4A70' : '#014ba0'};"></span></div>
                         <div class="relative flex justify-center text-xs uppercase"><span style="background-color: ${isDark ? '#2E4A70' : '#FFF9F0'}; padding: 0 8px; color: #CF8A40;"> O </span></div>
                     </div>
                     <p class="text-center">Si prefieres, envía una solicitud y te contactaremos.</p>
-                    <input id="swal-input-phone" class="swal2-input" placeholder="Tu número de WhatsApp (ej: +591...)" type="tel" style="border: 2px solid #73C7E3; border-radius: 8px; padding: 12px;">
+                    <input id="swal-input-phone" class="swal2-input" placeholder="Tu número de WhatsApp (ej: +591...)" type="tel" style="border: 2px solid #014ba0; border-radius: 8px; padding: 12px;">
                 </div>
             `,
             showCancelButton: true,
@@ -117,7 +117,7 @@ const AccessDeniedScreen = ({ user, isDark, swalTheme }) => {
                         }}
                         onMouseEnter={(e) => {
                             if (!isSubmitting) {
-                                e.target.style.backgroundColor = '#73C7E3';
+                                e.target.style.backgroundColor = '#014ba0';
                                 e.target.style.transform = 'translateY(-2px)';
                             }
                         }}
@@ -170,7 +170,7 @@ function AttemptAnswersModal({ attempt, exam, onClose, isDark }) {
                 style={{ backgroundColor: isDark ? '#2E4A70' : '#FFF9F0', color: isDark ? '#F0F2F2' : '#2E4A70' }}
                 onClick={(e) => e.stopPropagation()}
             >
-                <div className="px-6 py-4" style={{ borderBottom: `1px solid ${isDark ? '#73C7E3' : '#F0F2F2'}` }}>
+                <div className="px-6 py-4" style={{ borderBottom: `1px solid ${isDark ? '#014ba0' : '#F0F2F2'}` }}>
                     <h2 className="text-xl font-bold">Tus Respuestas del Examen</h2>
                     <p className="text-sm opacity-75">{exam.title}</p>
                     <p className="text-sm opacity-75">Realizado el: {new Date(attempt.completedAt.seconds * 1000).toLocaleString()}</p>
@@ -182,7 +182,7 @@ function AttemptAnswersModal({ attempt, exam, onClose, isDark }) {
                             <div 
                                 key={index} 
                                 className="p-4 rounded-lg"
-                                style={{ backgroundColor: isDark ? '#73C7E3' : '#F0F2F2' }}
+                                style={{ backgroundColor: isDark ? '#014ba0' : '#F0F2F2' }}
                             >
                                 <p className="font-semibold mb-2">{index + 1}. {question.questionText}</p>
                                 {question.type === 'open-ended' ? (
@@ -206,19 +206,19 @@ function AttemptAnswersModal({ attempt, exam, onClose, isDark }) {
                         );
                     })}
                 </div>
-                <div className="px-6 py-3 text-right" style={{ borderTop: `1px solid ${isDark ? '#73C7E3' : '#F0F2F2'}` }}>
+                <div className="px-6 py-3 text-right" style={{ borderTop: `1px solid ${isDark ? '#014ba0' : '#F0F2F2'}` }}>
                     <button 
                         onClick={onClose} 
                         className="px-5 py-2 rounded-lg font-semibold text-sm transition-all duration-200"
                         style={{ 
-                            backgroundColor: isDark ? '#73C7E3' : '#24B0BA', 
+                            backgroundColor: isDark ? '#014ba0' : '#24B0BA', 
                             color: '#FFF9F0' 
                         }}
                         onMouseEnter={(e) => {
-                            e.target.style.backgroundColor = isDark ? '#24B0BA' : '#73C7E3';
+                            e.target.style.backgroundColor = isDark ? '#24B0BA' : '#014ba0';
                         }}
                         onMouseLeave={(e) => {
-                            e.target.style.backgroundColor = isDark ? '#73C7E3' : '#24B0BA';
+                            e.target.style.backgroundColor = isDark ? '#014ba0' : '#24B0BA';
                         }}
                     >
                         Cerrar
@@ -311,19 +311,19 @@ export default function ExamenTestPage() {
                         >
                             <div 
                                 className="h-6 rounded w-3/4 mb-3"
-                                style={{ backgroundColor: isDark ? '#73C7E3' : '#24B0BA' }}
+                                style={{ backgroundColor: isDark ? '#014ba0' : '#24B0BA' }}
                             ></div>
                             <div 
                                 className="h-4 rounded w-full mb-2"
-                                style={{ backgroundColor: isDark ? '#73C7E3' : '#24B0BA' }}
+                                style={{ backgroundColor: isDark ? '#014ba0' : '#24B0BA' }}
                             ></div>
                             <div 
                                 className="h-4 rounded w-5/6 mb-5"
-                                style={{ backgroundColor: isDark ? '#73C7E3' : '#24B0BA' }}
+                                style={{ backgroundColor: isDark ? '#014ba0' : '#24B0BA' }}
                             ></div>
                             <div 
                                 className="h-10 rounded w-full"
-                                style={{ backgroundColor: '#73C7E3' }}
+                                style={{ backgroundColor: '#014ba0' }}
                             ></div>
                         </div>
                     ))}
@@ -359,7 +359,7 @@ export default function ExamenTestPage() {
                 className="min-h-screen p-4 sm:p-8 transition-colors"
                 style={{ backgroundColor: '#FFF9F0' }}
             >
-                <h1 className="text-3xl font-bold mb-8" style={{ color: '#2E4A70' }}>Exámenes Disponibles</h1>
+                <h1 className="text-3xl font-bold mb-8" style={{ color: '#014ba0' }}>Exámenes Disponibles</h1>
                 {loading ? (
                     <p className="text-center" style={{ color: '#2E4A70' }}>Cargando exámenes...</p>
                 ) : examsWithAttempts.length === 0 ? (
@@ -374,7 +374,7 @@ export default function ExamenTestPage() {
                                 className="flex flex-col rounded-xl shadow-lg transition-all duration-300 hover:shadow-xl"
                                 style={{ 
                                     backgroundColor: isDark ? '#2E4A70' : '#F0F2F2',
-                                    border: `1px solid ${isDark ? '#73C7E3' : '#24B0BA'}`
+                                    border: `1px solid ${isDark ? '#014ba0' : '#014ba0'}`
                                 }}
                                 onMouseEnter={(e) => {
                                     e.currentTarget.style.transform = 'translateY(-4px)';
@@ -394,14 +394,14 @@ export default function ExamenTestPage() {
                                     </h2>
                                     <p 
                                         className="text-sm mb-4 flex-grow"
-                                        style={{ color: isDark ? '#73C7E3' : '#2E4A70' }}
+                                        style={{ color: isDark ? '#014ba0' : '#2E4A70' }}
                                     >
                                         {exam.description || "Este examen pondrá a prueba tus conocimientos."}
                                     </p>
                                     <div className="flex items-center space-x-6 text-sm mb-6">
                                         <span 
                                             className="flex items-center gap-2"
-                                            style={{ color: isDark ? '#CF8A40' : '#24B0BA' }}
+                                            style={{ color: isDark ? '#CF8A40' : '#014ba0' }}
                                         >
                                             <FileTextIcon className="h-5 w-5" />
                                             <span>{exam.questions.length} Preguntas</span>
@@ -409,7 +409,7 @@ export default function ExamenTestPage() {
                                         {exam.timer && (
                                             <span 
                                                 className="flex items-center gap-2"
-                                                style={{ color: isDark ? '#CF8A40' : '#24B0BA' }}
+                                                style={{ color: isDark ? '#CF8A40' : '#014ba0' }}
                                             >
                                                 <ClockIcon className="h-5 w-5" />
                                                 <span>{exam.timer} Minutos</span>
@@ -419,13 +419,13 @@ export default function ExamenTestPage() {
                                     <Link 
                                         href={`/app/examen-test/examen?examId=${exam.id}`} 
                                         className="block w-full text-center font-semibold rounded-lg px-4 py-3 transition-all duration-300"
-                                        style={{ backgroundColor: '#24B0BA', color: '#FFF9F0' }}
+                                        style={{ backgroundColor: '#014ba0', color: '#FFF9F0' }}
                                         onMouseEnter={(e) => {
-                                            e.target.style.backgroundColor = '#73C7E3';
+                                            e.target.style.backgroundColor = '#24B0BA';
                                             e.target.style.transform = 'scale(1.02)';
                                         }}
                                         onMouseLeave={(e) => {
-                                            e.target.style.backgroundColor = '#24B0BA';
+                                            e.target.style.backgroundColor = '#014ba0';
                                             e.target.style.transform = 'scale(1)';
                                         }}
                                     >
@@ -435,11 +435,11 @@ export default function ExamenTestPage() {
                                 {exam.attempts.length > 0 && (
                                     <div 
                                         className="p-6"
-                                        style={{ borderTop: `1px solid ${isDark ? '#73C7E3' : '#24B0BA'}` }}
+                                        style={{ borderTop: `1px solid ${isDark ? '#014ba0' : '#014ba0'}` }}
                                     >
                                         <h3 
                                             className="text-sm font-bold uppercase mb-3"
-                                            style={{ color: isDark ? '#CF8A40' : '#24B0BA' }}
+                                            style={{ color: isDark ? '#CF8A40' : '#014ba0' }}
                                         >
                                             Tus Intentos Anteriores
                                         </h3>
@@ -448,18 +448,18 @@ export default function ExamenTestPage() {
                                                 <li 
                                                     key={attempt.id} 
                                                     className="flex justify-between items-center p-3 rounded-lg"
-                                                    style={{ backgroundColor: isDark ? '#73C7E3' : '#FFF9F0' }}
+                                                    style={{ backgroundColor: isDark ? '#014ba0' : '#FFF9F0' }}
                                                 >
                                                     <div>
                                                         <p 
                                                             className="font-semibold"
-                                                            style={{ color: isDark ? '#2E4A70' : '#2E4A70' }}
+                                                            style={{ color: isDark ? '#FFF9F0' : '#2E4A70' }}
                                                         >
                                                             Calificación: {attempt.score}/100
                                                         </p>
                                                         <p 
                                                             className="text-xs"
-                                                            style={{ color: isDark ? '#2E4A70' : '#24B0BA' }}
+                                                            style={{ color: isDark ? '#FFF9F0' : '#014ba0' }}
                                                         >
                                                             {new Date(attempt.completedAt.seconds * 1000).toLocaleDateString()}
                                                         </p>
@@ -470,7 +470,7 @@ export default function ExamenTestPage() {
                                                         style={{ backgroundColor: 'transparent' }}
                                                         title="Ver tus respuestas"
                                                         onMouseEnter={(e) => {
-                                                            e.target.style.backgroundColor = isDark ? '#2E4A70' : '#24B0BA';
+                                                            e.target.style.backgroundColor = isDark ? '#2E4A70' : '#014ba0';
                                                         }}
                                                         onMouseLeave={(e) => {
                                                             e.target.style.backgroundColor = 'transparent';
@@ -478,7 +478,7 @@ export default function ExamenTestPage() {
                                                     >
                                                         <EyeIcon 
                                                             className="h-5 w-5"
-                                                            style={{ color: isDark ? '#2E4A70' : '#24B0BA' }}
+                                                            style={{ color: isDark ? '#FFF9F0' : '#014ba0' }}
                                                         />
                                                     </button>
                                                 </li>

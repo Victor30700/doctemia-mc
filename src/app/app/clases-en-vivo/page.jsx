@@ -21,8 +21,8 @@ const NOMBRE_NEGOCIO = 'DOCTEMIA MC';
 
 // Paleta de colores
 const COLORS = {
-  primary: '#24B0BA',      // Turquesa principal
-  secondary: '#73C7E3',    // Azul claro
+  primary: '#014ba0',      // Turquesa principal
+  secondary: '#014ba0',    // Azul oscuro
   accent: '#CF8A40',       // Naranja/Dorado
   dark: '#2E4A70',         // Azul oscuro
   neutral: '#F0F2F2',      // Gris claro

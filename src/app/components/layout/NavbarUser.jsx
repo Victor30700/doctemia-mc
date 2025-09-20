@@ -91,7 +91,7 @@ export default function NavbarUser({ children }) {
   };
 
   // --- ✅ MEJORA: Nueva paleta de colores personalizada ---
-  // Paleta de colores: #73C7E3, #FFF9F0, #24B0BA, #F0F2F2, #2E4A70, #CF8A40
+  // Paleta de colores: #014ba0, #FFF9F0, #24B0BA, #F0F2F2, #2E4A70, #CF8A40
   const headerBg = isDark 
     ? 'text-white border-gray-700' 
     : 'text-gray-900 border-gray-200';
@@ -104,10 +104,11 @@ export default function NavbarUser({ children }) {
     ? 'bg-gray-900 text-gray-100' 
     : 'text-gray-900';
 
+
   // Estilos dinámicos para el header con la nueva paleta
   const headerStyle = isDark
     ? { backgroundColor: '#2E4A70' } // Azul oscuro para modo oscuro
-    : { backgroundColor: '#73C7E3' }; // Azul claro para modo claro
+    : { backgroundColor: '#FFFFFF' }; // Azul claro para modo claro
 
   // Estilos dinámicos para el sidebar con la nueva paleta
   const sidebarStyle = isDark
@@ -148,7 +149,7 @@ export default function NavbarUser({ children }) {
           <button 
             onClick={toggleTheme} 
             className={`p-2 rounded-lg transition-all hover:bg-white/10`}
-            style={{ backgroundColor: isDark ? '#24B0BA' : '#F0F2F2' }}
+            style={{ backgroundColor: isDark ? '#3b8eed' : '#F0F2F2' }}
           >
             {isDark ? <Sun className="w-5 h-5 text-yellow-400" /> : <Moon className="w-5 h-5 text-gray-700" />}
           </button>
@@ -199,7 +200,7 @@ export default function NavbarUser({ children }) {
                   <li key={index} className="px-2 pt-4 pb-1">
                     <span 
                       className="text-xs font-bold uppercase"
-                      style={{ color: isDark ? '#73C7E3' : '#2E4A70' }}
+                      style={{ color: isDark ? '#014ba0' : '#2E4A70' }}
                     >
                       {item.label}
                     </span>
@@ -214,8 +215,8 @@ export default function NavbarUser({ children }) {
                 
                 const buttonStyle = isParentActive && !isOpen 
                   ? { 
-                      backgroundColor: isDark ? '#24B0BA' : '#73C7E3', 
-                      color: isDark ? '#FFF9F0' : '#2E4A70' 
+                      backgroundColor: isDark ? '#24B0BA' : '#014ba0', 
+                      color: isDark ? '#FFF9F0' : '#FFFFFF' 
                     }
                   : { color: isDark ? '#FFF9F0' : '#2E4A70' };
 
@@ -248,8 +249,8 @@ export default function NavbarUser({ children }) {
                           const active = pathname.startsWith(subItem.href);
                           const subItemStyle = active 
                             ? { 
-                                backgroundColor: isDark ? '#24B0BA' : '#73C7E3', 
-                                color: isDark ? '#FFF9F0' : '#2E4A70' 
+                                backgroundColor: isDark ? '#24B0BA' : '#014ba0', 
+                                color: isDark ? '#FFF9F0' : '#FFFFFF' 
                               }
                             : { color: isDark ? '#F0F2F2' : '#2E4A70' };
 
@@ -285,8 +286,8 @@ export default function NavbarUser({ children }) {
               const active = pathname === item.href || (item.href !== '/app' && pathname.startsWith(item.href));
               const linkStyle = active 
                 ? { 
-                    backgroundColor: isDark ? '#24B0BA' : '#73C7E3', 
-                    color: isDark ? '#FFF9F0' : '#2E4A70' 
+                    backgroundColor: isDark ? '#24B0BA' : '#014ba0', 
+                    color: isDark ? '#FFF9F0' : '#FFFFFF' 
                   }
                 : { color: isDark ? '#FFF9F0' : '#2E4A70' };
 

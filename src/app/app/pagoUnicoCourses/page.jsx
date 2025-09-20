@@ -1,3 +1,4 @@
+
 'use client';
 import React, { useState, useEffect, useMemo } from 'react';
 import { db } from '../../../lib/firebase';
@@ -313,7 +314,7 @@ export default function CoursesPagoUnicoPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedCategory, setSelectedCategory] = useState('');
     const [completedCourses, setCompletedCourses] = useState([]);
-    const [viewMode, setViewMode] = useState('list'); // 'grid' o 'list' - CAMBIADO A 'list' POR DEFECTO
+    const [viewMode, setViewMode] = useState('list');
 
     const swalTheme = {
         background: isDark ? '#1f2937' : '#ffffff', 
@@ -368,7 +369,7 @@ export default function CoursesPagoUnicoPage() {
         });
     }, [courses, searchTerm, selectedCategory]);
 
-    // Agrupar cursos por mes/año y categoría
+    // Agrupar cursos por categoría
     const groupedCourses = useMemo(() => {
         if (filteredCourses.length === 0) return {};
         const categoryMap = new Map(categories.map(cat => [cat.id, cat.name]));
@@ -376,15 +377,10 @@ export default function CoursesPagoUnicoPage() {
         const sortedCourses = [...filteredCourses].sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
         
         sortedCourses.forEach(course => {
-            const date = (course.createdAt || course.updatedAt)?.toDate(); 
-            const monthYearKey = date ? 
-                date.toLocaleString('es-ES', { month: 'long', year: 'numeric' }).replace(/^\w/, c => c.toUpperCase()) : 
-                'Recientes';
             const categoryName = categoryMap.get(course.categoryId) || 'Sin Categoría';
 
-            if (!groups[monthYearKey]) groups[monthYearKey] = {};
-            if (!groups[monthYearKey][categoryName]) groups[monthYearKey][categoryName] = [];
-            groups[monthYearKey][categoryName].push(course);
+            if (!groups[categoryName]) groups[categoryName] = [];
+            groups[categoryName].push(course);
         });
         return groups;
     }, [filteredCourses, categories]);
@@ -450,7 +446,7 @@ export default function CoursesPagoUnicoPage() {
                 {/* Header */}
                 <div className="text-center mb-12">
                     <h1 className="text-5xl font-bold bg-gradient-to-r from-teal-600 to-blue-600 bg-clip-text text-transparent mb-4">
-                        Catálogo Premium
+                        Catálogo de Cursos
                     </h1>
                     <p className="text-xl text-gray-600 max-w-2xl mx-auto">
                         Accede a nuestros cursos exclusivos de pago único y potencia tu aprendizaje
@@ -545,112 +541,98 @@ export default function CoursesPagoUnicoPage() {
 
                 {/* Contenido de cursos */}
                 {Object.keys(groupedCourses).length > 0 ? (
-                    <div className="space-y-16">
-                        {Object.entries(groupedCourses).map(([monthYear, categoriesInMonth]) => (
-                            <div key={monthYear} className="space-y-8">
-                                {/* Título del período */}
-                                <div className="text-center">
-                                    <h2 className="text-3xl font-bold bg-gradient-to-r from-teal-600 to-blue-600 bg-clip-text text-transparent mb-2">
-                                        {monthYear}
-                                    </h2>
-                                    <div className="w-24 h-1 bg-gradient-to-r from-teal-400 to-blue-500 mx-auto rounded-full"></div>
+                    <div className="space-y-12">
+                        {/* Categorías */}
+                        {Object.entries(groupedCourses).map(([categoryName, coursesInCategory]) => (
+                            <div key={categoryName}>
+                                {/* Título de la categoría */}
+                                <div className="flex items-center gap-4 mb-8">
+                                    <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-teal-500 to-blue-600 rounded-xl flex items-center justify-center">
+                                        <BookOpen className="h-6 w-6 text-white" />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-2xl font-bold text-gray-800">{categoryName}</h3>
+                                        <p className="text-gray-600">{coursesInCategory.length} curso{coursesInCategory.length !== 1 ? 's' : ''} disponible{coursesInCategory.length !== 1 ? 's' : ''}</p>
+                                    </div>
                                 </div>
-
-                                {/* Categorías dentro del período */}
-                                <div className="space-y-12">
-                                    {Object.entries(categoriesInMonth).map(([categoryName, coursesInCategory]) => (
-                                        <div key={categoryName}>
-                                            {/* Título de la categoría */}
-                                            <div className="flex items-center gap-4 mb-8">
-                                                <div className="flex-shrink-0 w-12 h-12 bg-gradient-to-br from-teal-500 to-blue-600 rounded-xl flex items-center justify-center">
-                                                    <BookOpen className="h-6 w-6 text-white" />
-                                                </div>
-                                                <div>
-                                                    <h3 className="text-2xl font-bold text-gray-800">{categoryName}</h3>
-                                                    <p className="text-gray-600">{coursesInCategory.length} curso{coursesInCategory.length !== 1 ? 's' : ''} disponible{coursesInCategory.length !== 1 ? 's' : ''}</p>
-                                                </div>
-                                            </div>
-                                            
-                                            {/* Grid de cursos - RESPONSIVO CON 3 COLUMNAS */}
-                                            <div className={viewMode === 'grid' 
-                                                ? "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8" 
-                                                : "space-y-6"
-                                            }>
-                                                {coursesInCategory.map((course) => {
-                                                    const isCompleted = completedCourses.includes(course.id);
-                                                    
-                                                    return viewMode === 'grid' ? (
-                                                        <CourseCard
-                                                            key={course.id}
-                                                            course={course}
-                                                            isCompleted={isCompleted}
-                                                            onToggleComplete={handleToggleComplete}
-                                                            onViewContent={handleViewContent}
+                                
+                                {/* Grid de cursos - RESPONSIVO CON 3 COLUMNAS */}
+                                <div className={viewMode === 'grid' 
+                                    ? "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8" 
+                                    : "space-y-6"
+                                }>
+                                    {coursesInCategory.map((course) => {
+                                        const isCompleted = completedCourses.includes(course.id);
+                                        
+                                        return viewMode === 'grid' ? (
+                                            <CourseCard
+                                                key={course.id}
+                                                course={course}
+                                                isCompleted={isCompleted}
+                                                onToggleComplete={handleToggleComplete}
+                                                onViewContent={handleViewContent}
+                                            />
+                                        ) : (
+                                            // Vista de lista
+                                            <div key={course.id} className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden">
+                                                <div className="flex flex-col sm:flex-row">
+                                                    <div className="sm:w-80 h-48 sm:h-auto relative flex-shrink-0">
+                                                        <Image 
+                                                            src={convertGoogleDriveUrl(course.imageUrl)}
+                                                            alt={course.title} 
+                                                            width={320}
+                                                            height={200}
+                                                            className="w-full h-full object-cover"
+                                                            unoptimized={course.imageUrl?.includes('drive.google.com')}
                                                         />
-                                                    ) : (
-                                                        // Vista de lista
-                                                        <div key={course.id} className="bg-white rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden">
-                                                            <div className="flex flex-col sm:flex-row">
-                                                                <div className="sm:w-80 h-48 sm:h-auto relative flex-shrink-0">
-                                                                    <Image 
-                                                                        src={convertGoogleDriveUrl(course.imageUrl)}
-                                                                        alt={course.title} 
-                                                                        width={320}
-                                                                        height={200}
-                                                                        className="w-full h-full object-cover"
-                                                                        unoptimized={course.imageUrl?.includes('drive.google.com')}
-                                                                    />
-                                                                    {isCompleted && (
-                                                                        <>
-                                                                            <div className="absolute top-4 right-4 bg-gradient-to-r from-teal-500 to-blue-600 text-white rounded-full p-2 shadow-lg">
-                                                                                <CheckCircle2 size={18} />
-                                                                            </div>
-                                                                            <div className="absolute inset-0 bg-gradient-to-t from-teal-900/30 to-transparent"></div>
-                                                                        </>
-                                                                    )}
+                                                        {isCompleted && (
+                                                            <>
+                                                                <div className="absolute top-4 right-4 bg-gradient-to-r from-teal-500 to-blue-600 text-white rounded-full p-2 shadow-lg">
+                                                                    <CheckCircle2 size={18} />
                                                                 </div>
-                                                                
-                                                                <div className="flex-1 p-6 flex flex-col">
-                                                                    <div className="flex-1">
-                                                                        <h4 className="text-xl font-bold text-gray-800 mb-3">
-                                                                            {course.title}
-                                                                        </h4>
-                                                                        <p className="text-gray-600 mb-6 leading-relaxed">
-                                                                            {course.description}
-                                                                        </p>
-                                                                    </div>
-                                                                    
-                                                                    <div className="flex flex-col sm:flex-row gap-3 mt-auto">
-                                                                        <button 
-                                                                            onClick={() => handleToggleComplete(course.id, isCompleted)} 
-                                                                            className={`flex-1 inline-flex items-center justify-center gap-2 font-semibold py-3 px-4 rounded-xl transition-all duration-300 ${
-                                                                                isCompleted 
-                                                                                    ? 'bg-gradient-to-r from-teal-100 to-blue-100 text-teal-700 hover:from-teal-200 hover:to-blue-200' 
-                                                                                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                                                                            }`}
-                                                                        >
-                                                                            {isCompleted ? 
-                                                                                <><CheckCircle2 size={18} /> Completado</> : 
-                                                                                <><Bookmark size={18} /> Marcar Completado</>
-                                                                            }
-                                                                        </button>
-                                                                        
-                                                                        <button 
-                                                                            onClick={() => handleViewContent(course.id)} 
-                                                                            className="flex-1 inline-flex items-center justify-center gap-2 bg-gradient-to-r from-teal-500 to-blue-600 text-white font-bold py-3 px-4 rounded-xl hover:from-teal-600 hover:to-blue-700 transition-all duration-300 shadow-lg hover:shadow-xl"
-                                                                        >
-                                                                            <BookOpen size={20} /> 
-                                                                            Ver Contenido
-                                                                        </button>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
+                                                                <div className="absolute inset-0 bg-gradient-to-t from-teal-900/30 to-transparent"></div>
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                    
+                                                    <div className="flex-1 p-6 flex flex-col">
+                                                        <div className="flex-1">
+                                                            <h4 className="text-xl font-bold text-gray-800 mb-3">
+                                                                {course.title}
+                                                            </h4>
+                                                            <p className="text-gray-600 mb-6 leading-relaxed">
+                                                                {course.description}
+                                                            </p>
                                                         </div>
-                                                    );
-                                                })}
+                                                        
+                                                        <div className="flex flex-col sm:flex-row gap-3 mt-auto">
+                                                            <button 
+                                                                onClick={() => handleToggleComplete(course.id, isCompleted)} 
+                                                                className={`flex-1 inline-flex items-center justify-center gap-2 font-semibold py-3 px-4 rounded-xl transition-all duration-300 ${
+                                                                    isCompleted 
+                                                                        ? 'bg-gradient-to-r from-teal-100 to-blue-100 text-teal-700 hover:from-teal-200 hover:to-blue-200' 
+                                                                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                                                                }`}
+                                                            >
+                                                                {isCompleted ? 
+                                                                    <><CheckCircle2 size={18} /> Completado</> : 
+                                                                    <><Bookmark size={18} /> Marcar Completado</>
+                                                                }
+                                                            </button>
+                                                            
+                                                            <button 
+                                                                onClick={() => handleViewContent(course.id)} 
+                                                                className="flex-1 inline-flex items-center justify-center gap-2 bg-gradient-to-r from-teal-500 to-blue-600 text-white font-bold py-3 px-4 rounded-xl hover:from-teal-600 hover:to-blue-700 transition-all duration-300 shadow-lg hover:shadow-xl"
+                                                            >
+                                                                <BookOpen size={20} /> 
+                                                                Ver Contenido
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             </div>
-                                        </div>
-                                    ))}
+                                        );
+                                    })}
                                 </div>
                             </div>
                         ))}
