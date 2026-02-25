@@ -1,4 +1,5 @@
 import { db } from "@/lib/firebase-admin";
+import { NextResponse } from 'next/server';
 
 function formatDate(field) {
   if (field?.toDate) {
@@ -11,14 +12,24 @@ function formatDate(field) {
 }
 
 export async function GET() {
-  const snapshot = await db.collection('users').get();
+  try {
+    if (!db) {
+      console.error("Firebase Admin DB no está inicializado. Verifica las variables de entorno.");
+      return NextResponse.json({ error: "Error de configuración del servidor" }, { status: 500 });
+    }
 
-  const users = snapshot.docs.map(doc => ({
-    id: doc.id,
-    ...doc.data(),
-    fechaSuscripcion: formatDate(doc.data().fechaSuscripcion),
-    fechaVencimiento: formatDate(doc.data().fechaVencimiento),
-  }));
+    const snapshot = await db.collection('users').get();
 
-  return Response.json(users);
+    const users = snapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data(),
+      fechaSuscripcion: formatDate(doc.data().fechaSuscripcion),
+      fechaVencimiento: formatDate(doc.data().fechaVencimiento),
+    }));
+
+    return NextResponse.json(users);
+  } catch (error) {
+    console.error("Error al obtener usuarios:", error);
+    return NextResponse.json({ error: "Error interno al obtener usuarios" }, { status: 500 });
+  }
 }

@@ -3,6 +3,10 @@ import { auth, db } from '@/lib/firebase-admin';
 
 export async function POST(request) {
   try {
+    if (!auth || !db) {
+      console.error("Firebase Admin no inicializado.");
+      return NextResponse.json({ error: 'Configuración del servidor incompleta (Firebase)' }, { status: 500 });
+    }
     const {
       fullName,
       fechaNacimiento,

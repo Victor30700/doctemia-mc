@@ -4,6 +4,11 @@ import { auth as adminAuth, db } from '@/lib/firebase-admin';
 
 export async function POST(request) {
   try {
+    if (!adminAuth || !db) {
+      console.error("Firebase Admin no inicializado. Faltan variables de entorno.");
+      return NextResponse.json({ error: 'Configuración del servidor incompleta (Firebase)' }, { status: 500 });
+    }
+
     const { token } = await request.json();
 
     if (!token) {

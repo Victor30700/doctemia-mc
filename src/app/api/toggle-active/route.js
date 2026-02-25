@@ -5,6 +5,10 @@ import { db } from '@/lib/firebase-admin';
 
 export async function POST(req) {
   try {
+    if (!db) {
+      console.error("Firebase Admin DB no inicializada.");
+      return NextResponse.json({ error: 'Configuración del servidor incompleta (Firebase DB)' }, { status: 500 });
+    }
     const { userId } = await req.json();
 
     if (!userId) {
