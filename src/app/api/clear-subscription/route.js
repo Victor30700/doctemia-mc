@@ -1,11 +1,14 @@
 import { NextResponse } from 'next/server';
-import { admin } from '@/lib/firebase-admin';
+import { db } from '@/lib/firebase-admin';
 
 export async function POST(req) {
   try {
+    if (!db) {
+      return NextResponse.json({ error: 'Database not initialized' }, { status: 500 });
+    }
     const { userId } = await req.json();
 
-    const userRef = admin.firestore().collection('users').doc(userId);
+    const userRef = db.collection('users').doc(userId);
     await userRef.update({
       fechaSuscripcion: '-',
       fechaVencimiento: '-',

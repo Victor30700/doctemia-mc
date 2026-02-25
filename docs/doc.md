@@ -28,16 +28,10 @@ Se refactorizó completamente la inicialización de Firebase Admin:
 ### B. Limpieza de Rutas API
 - **Eliminación de `src/app/api/login.js`**: Se eliminó este archivo para seguir estrictamente la convención de `route.js` del App Router de Next.js y evitar el error de "Duplicate API route".
 
-### C. Refuerzo de Rutas API (Login, Users, Create-User, Toggle-Active)
-Se aplicó un patrón de "Fail-Safe" en las siguientes rutas:
-- `src/app/api/login/route.js`
-- `src/app/api/users/route.js`
-- `src/app/api/create-user/route.js`
-- `src/app/api/toggle-active/route.js`
-
-**Mejoras incluidas:**
-1. **Verificación de Instancia**: Antes de cualquier operación, se comprueba si `auth` o `db` son nulos. Si lo son, se devuelve un error 500 con un mensaje claro: *"Configuración del servidor incompleta (Firebase)"*.
-2. **Manejo de Excepciones**: Se envolvieron las llamadas a la base de datos en bloques `try-catch` para capturar errores de red o permisos, evitando que el servidor "explote" y devolviendo respuestas JSON adecuadas al frontend.
+### E. Resolución de Errores de Importación
+Tras modernizar el SDK, se detectaron errores en rutas que aún intentaban importar el objeto global `admin`. Se corrigieron las siguientes rutas para usar las nuevas exportaciones modulares (`auth`, `db`):
+- `/api/clear-subscription/route.js`: Actualizado para usar `db` en lugar de `admin.firestore()`.
+- `/api/update-subscription/route.js`: Actualizado para usar `db` en lugar de `admin.firestore()`.
 
 ---
 
