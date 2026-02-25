@@ -11,16 +11,27 @@ export default function AdminLayout({ children }) {
   const router = useRouter();
 
   useEffect(() => {
-    if (!loading) {
-      if (!user) {
-        const timeout = setTimeout(() => {
-          router.replace('/login');
-        }, 1000);
-        return () => clearTimeout(timeout);
+    const logoutAndRedirect = async () => {
+      if (!loading) {
+        if (!user) {
+          try {
+            // Llamar a la API de logout para limpiar cookies residuales (__session)
+            await fetch('/api/logout', { method: 'POST' });
+          } catch (error) {
+            console.error('Error al limpiar sesión:', error);
+          } finally {
+            // Redirigir al login después de intentar limpiar la sesión
+            router.replace('/login');
+          }
+          return;
+        }
+
+        const isAdmin = role === 'admin';
+        if (!isAdmin) return router.replace('/app');
       }
-      const isAdmin = role === 'admin';
-      if (!isAdmin) return router.replace('/app');
-    }
+    };
+
+    logoutAndRedirect();
   }, [loading, user, role, router]);
 
   // Loading state con soporte para modo oscuro
@@ -30,7 +41,7 @@ export default function AdminLayout({ children }) {
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-400 mx-auto mb-4"></div>
           <p className="text-gray-600 dark:text-gray-300 text-lg font-medium">
-            Cargando...
+            {loading ? 'Cargando...' : 'Limpiando sesión e iniciando redirección al login...'}
           </p>
         </div>
       </div>

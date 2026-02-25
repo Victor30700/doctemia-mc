@@ -43,6 +43,15 @@ Se corrigió un error recurrente donde el sistema reportaba que un correo electr
     *   **Limpieza de Datos**: Se añadió `.trim()` al campo de correo antes de enviarlo.
     *   **Validación de Contraseña**: Se incluyó una verificación de longitud mínima (6 caracteres) para cumplir con los requisitos de Firebase y evitar errores silenciosos del servidor.
 
+### I. Corrección del Bucle Infinito de Redirección (Infinite Redirect Loop)
+Se resolvió un problema crítico donde los usuarios quedaban atrapados en una pantalla de carga infinita al intentar acceder a `/login` o rutas protegidas (`/app`, `/admin`).
+
+- **Causa**: Desincronización entre el servidor (Middleware) y el cliente (Firebase Auth). El Middleware detectaba una cookie `__session` residual y redirigía al usuario a `/app`. Una vez ahí, Firebase Auth confirmaba que no había una sesión activa y el Layout redirigía de vuelta a `/login`, repitiendo el ciclo infinitamente.
+- **Solución Implementada**:
+    - **Limpieza Automática**: Se modificaron los archivos `src/app/app/layout.jsx` y `src/app/admin/layout.jsx` para ejecutar una limpieza proactiva. Si el estado de autenticación es nulo pero existe una cookie, el sistema llama al endpoint `/api/logout` mediante un `fetch` antes de realizar la redirección.
+    - **Feedback Visual**: Se actualizó la interfaz de usuario para mostrar el mensaje: *"Limpiando sesión e iniciando redirección al login..."* junto con un indicador de carga (spinner), eliminando la confusión de la "pantalla blanca".
+- **Impacto**: Esta mejora elimina la necesidad de que los usuarios borren manualmente sus cookies o datos de navegación para solucionar errores de acceso. El sistema ahora se "autocorrige" al detectar sesiones huérfanas.
+
 ---
 
 ## 3. Instrucciones de Configuración en Vercel
