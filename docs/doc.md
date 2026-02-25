@@ -33,6 +33,16 @@ Tras la actualización a Next.js 16, se detectó un error al cerrar sesión (`Fa
 - **Causa**: En las versiones más recientes de Next.js, la función `cookies()` de `next/headers` es asíncrona y debe ser esperada (`await`).
 - **Solución**: Se actualizó `/api/logout/route.js` para usar `await cookies()`, permitiendo que las cookies de sesión se eliminen correctamente sin colapsar el servidor.
 
+### H. Robustez en la Creación de Usuarios
+Se corrigió un error recurrente donde el sistema reportaba que un correo electrónico ya estaba en uso, a pesar de no figurar en la base de datos (Firestore).
+- **Causa**: "Usuarios fantasma" creados en Firebase Authentication pero con fallos previos en la escritura de Firestore.
+- **Solución en API (`/api/create-user`)**:
+    *   **Manejo de Duplicados**: Si el usuario ya existe en Auth, el sistema ahora lo recupera (`getUserByEmail`) y procede a completar su registro en Firestore en lugar de lanzar un error 500.
+    *   **Normalización**: Se implementó la limpieza automática de espacios y conversión a minúsculas para los correos electrónicos.
+- **Mejoras en Frontend (`admin/users/create` y `register`)**:
+    *   **Limpieza de Datos**: Se añadió `.trim()` al campo de correo antes de enviarlo.
+    *   **Validación de Contraseña**: Se incluyó una verificación de longitud mínima (6 caracteres) para cumplir con los requisitos de Firebase y evitar errores silenciosos del servidor.
+
 ---
 
 ## 3. Instrucciones de Configuración en Vercel

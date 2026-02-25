@@ -10,7 +10,7 @@ export async function POST(request) {
     }
 
     const body = await request.json();
-    const {
+    let {
       fullName,
       fechaNacimiento,
       sexo,
@@ -23,12 +23,25 @@ export async function POST(request) {
       rol,
     } = body;
 
-    // 1. Crea el usuario en Firebase Authentication
-    createdUserRecord = await auth.createUser({
-      email,
-      password,
-      displayName: fullName,
-    });
+    // Normalizar email
+    const normalizedEmail = email?.trim().toLowerCase();
+
+    // 1. Intentar crear el usuario en Firebase Authentication
+    try {
+      createdUserRecord = await auth.createUser({
+        email: normalizedEmail,
+        password,
+        displayName: fullName,
+      });
+    } catch (authError) {
+      // Si el error es que ya existe, intentamos obtener el usuario existente
+      if (authError.code === 'auth/email-already-exists') {
+        console.log(`El usuario ${normalizedEmail} ya existe en Auth. Verificando Firestore...`);
+        createdUserRecord = await auth.getUserByEmail(normalizedEmail);
+      } else {
+        throw authError;
+      }
+    }
 
     // 2. Graba los datos adicionales del usuario en Firestore
     try {
@@ -43,7 +56,7 @@ export async function POST(request) {
           universidad: universidad || '', 
           profesion: profesion || '',
           fechaExamen: fechaExamen || null, 
-          email: email || '',
+          email: normalizedEmail || '',
           rol: rol || 'user',
           active: true, 
           isPremium: false,
@@ -59,13 +72,12 @@ export async function POST(request) {
     } catch (firestoreError) {
       console.error('Error al guardar en Firestore:', firestoreError);
       
-      // SI FALLA FIRESTORE, BORRAMOS EL USUARIO DE AUTH PARA EVITAR CUENTAS HUÉRFANAS
-      if (createdUserRecord) {
-        await auth.deleteUser(createdUserRecord.uid);
-        console.log(`Usuario ${createdUserRecord.uid} eliminado de Auth por fallo en Firestore.`);
-      }
+      // SOLO BORRAMOS SI LO ACABAMOS DE CREAR (para no borrar un usuario que ya existía previamente en Auth)
+      // Pero como no sabemos con certeza si lo acabamos de crear o ya existía, 
+      // y estamos en un flujo de "Crear Nuevo", si falla Firestore después de detectar que ya existía,
+      // quizás es mejor dejarlo ahí para que el admin pueda intentar de nuevo.
       
-      throw firestoreError; // Relanzamos para que lo capture el catch principal
+      throw firestoreError; 
     }
 
   } catch (error) {

@@ -85,11 +85,21 @@ export default function RegisterPage() {
       return;
     }
 
+    if (form.password.length < 6) {
+      await Swal.fire({ title: 'Contraseña muy corta', text: 'La contraseña debe tener al menos 6 caracteres.', icon: 'warning', ...swalTheme });
+      setIsLoading(false);
+      return;
+    }
+
     try {
       const res = await fetch('/api/create-user', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ...form, rol: 'user' }),
+        body: JSON.stringify({ 
+          ...form, 
+          email: form.email.trim(),
+          rol: 'user' 
+        }),
       });
 
       if (!res.ok) {
