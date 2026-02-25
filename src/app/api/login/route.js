@@ -5,8 +5,16 @@ import { auth as adminAuth, db } from '@/lib/firebase-admin';
 export async function POST(request) {
   try {
     if (!adminAuth || !db) {
-      console.error("Firebase Admin no inicializado. Faltan variables de entorno.");
-      return NextResponse.json({ error: 'Configuración del servidor incompleta (Firebase)' }, { status: 500 });
+      const missing = [];
+      if (!process.env.FIREBASE_PROJECT_ID) missing.push('PROJECT_ID');
+      if (!process.env.FIREBASE_CLIENT_EMAIL) missing.push('CLIENT_EMAIL');
+      if (!process.env.FIREBASE_PRIVATE_KEY) missing.push('PRIVATE_KEY');
+      
+      console.error("Firebase Admin no inicializado. Faltan:", missing.join(', '));
+      return NextResponse.json({ 
+        error: 'Configuración del servidor incompleta', 
+        details: `Faltan variables: ${missing.join(', ')}` 
+      }, { status: 500 });
     }
 
     const { token } = await request.json();
