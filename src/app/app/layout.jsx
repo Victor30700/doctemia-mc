@@ -11,7 +11,11 @@ export default function UserLayout({ children }) {
 
   useEffect(() => {
     if (!loading && !user) {
-      router.replace('/login');
+      // Esperar un momento antes de redirigir por si el SDK de Firebase es lento en sincronizar
+      const timeout = setTimeout(() => {
+        router.replace('/login');
+      }, 1000);
+      return () => clearTimeout(timeout);
     }
   }, [loading, user, router]);
 

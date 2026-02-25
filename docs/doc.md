@@ -28,11 +28,10 @@ Se refactorizó completamente la inicialización de Firebase Admin:
 ### B. Limpieza de Rutas API
 - **Eliminación de `src/app/api/login.js`**: Se eliminó este archivo para seguir estrictamente la convención de `route.js` del App Router de Next.js y evitar el error de "Duplicate API route".
 
-### F. Actualización de Seguridad y Compilación
-Se resolvió el error de vulnerabilidad `CVE-2025-66478` detectado por Vercel:
-- **Actualización de Versión**: Se actualizó Next.js a la versión `16.1.6` (latest) y React a la `19.2.4`.
-- **Configuración de Turbopack**: Se habilitó `turbopack: {}` en `next.config.js` para compatibilidad con la nueva versión y el uso de configuraciones personalizadas de Webpack.
-- **Corrección de Errores de Build**: Se detectó que `src/app/marketing/page.jsx` estaba vacío, lo cual es un error en Next.js 16. Se añadió un componente funcional de marcador de posición para permitir la compilación exitosa.
+### G. Corrección del Error de Logout
+Tras la actualización a Next.js 16, se detectó un error al cerrar sesión (`Failed to logout`).
+- **Causa**: En las versiones más recientes de Next.js, la función `cookies()` de `next/headers` es asíncrona y debe ser esperada (`await`).
+- **Solución**: Se actualizó `/api/logout/route.js` para usar `await cookies()`, permitiendo que las cookies de sesión se eliminen correctamente sin colapsar el servidor.
 
 ---
 

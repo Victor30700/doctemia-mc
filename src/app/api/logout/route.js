@@ -6,8 +6,8 @@ export async function POST(request) {
   try {
     console.log('API /api/logout: Iniciando proceso de logout...');
 
-    // Obtener instancia de cookies para manipularlas
-    const cookieStore = cookies();
+    // En Next.js 15/16, cookies() es asíncrono
+    const cookieStore = await cookies();
 
     // Eliminar la cookie __session estableciendo Max-Age a 0
     cookieStore.set({

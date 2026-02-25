@@ -7,227 +7,286 @@ import Swal from 'sweetalert2';
 import 'sweetalert2/dist/sweetalert2.min.css';
 import { fetcher } from '@/lib/fetcher';
 import { useTheme } from '@/context/ThemeContext';
-import { CheckCircle, XCircle, Phone } from 'lucide-react'; // Importar iconos para hasPagoUnicoAccess y teléfono
+import { CheckCircle, XCircle, Phone, Trash2, UserPlus, ListChecks, X } from 'lucide-react';
 
 export default function UsersClient() {
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState('');
   const [filteredUsers, setFilteredUsers] = useState([]);
+  const [selectedUsers, setSelectedUsers] = useState([]);
+  const [isSelectionMode, setIsSelectionMode] = useState(false); // Nuevo: Controla la visibilidad de checkboxes
   const { isDark, isLoaded } = useTheme();
 
   const { data: usersData, error } = useSWR('/api/users', fetcher, {
-    refreshInterval: 5000, // Mantener el refresco para ver cambios rápidamente
+    refreshInterval: 5000,
   });
 
   const swalTheme = {
     background: isDark ? '#1f2937' : '#ffffff',
     color: isDark ? '#f9fafb' : '#111827',
-    confirmButtonColor: '#3b82f6',
-    cancelButtonColor: '#ef4444',
+    confirmButtonColor: '#ef4444',
+    cancelButtonColor: '#6b7280',
   };
 
   useEffect(() => {
     if (!usersData) return;
     const term = searchTerm.toLowerCase();
-    setFilteredUsers(
-      usersData
-        .filter(user => user.role !== 'admin') // ✅ CAMBIO CLAVE: Filtrar usuarios con rol 'admin'
-        .filter(user =>
-          (user.fullName && user.fullName.toLowerCase().includes(term)) ||
-          (user.email && user.email.toLowerCase().includes(term)) ||
-          //comentado busqueda por profesión, descometar si quiere buscar por profesión
-          //(user.profesion && user.profesion.toLowerCase().includes(term)) ||
-          (user.telefono && user.telefono.toLowerCase().includes(term))
-        )
-    );
+    const filtered = usersData
+      .filter(user => user.role !== 'admin')
+      .filter(user =>
+        (user.fullName && user.fullName.toLowerCase().includes(term)) ||
+        (user.email && user.email.toLowerCase().includes(term)) ||
+        (user.telefono && user.telefono.toLowerCase().includes(term))
+      );
+    setFilteredUsers(filtered);
+    
+    // Limpiar selección si los usuarios filtrados ya no incluyen a los seleccionados
+    setSelectedUsers(prev => prev.filter(id => filtered.some(u => u.id === id)));
   }, [searchTerm, usersData]);
 
-  const handleToggleActive = async (userId, currentStatus) => {
-    const actionText = currentStatus ? 'desactivar' : 'activar';
-    const result = await Swal.fire({
-      title: `¿${actionText.charAt(0).toUpperCase() + actionText.slice(1)} usuario?`,
-      text: 'Esto cambiará el estado de acceso del usuario.',
-      icon: 'warning',
-      showCancelButton: true,
-      confirmButtonText: `Sí, ${actionText}`,
-      cancelButtonText: 'Cancelar',
-      ...swalTheme,
-    });
+  const toggleSelectUser = (userId) => {
+    setSelectedUsers(prev => 
+      prev.includes(userId) ? prev.filter(id => id !== userId) : [...prev, userId]
+    );
+  };
 
-    if (result.isConfirmed) {
-      try {
-        await fetch('/api/toggle-active', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userId }),
+  const toggleSelectAll = () => {
+    if (selectedUsers.length === filteredUsers.length) {
+      setSelectedUsers([]);
+    } else {
+      // SOLO selecciona los que están actualmente en la búsqueda/filtro
+      setSelectedUsers(filteredUsers.map(u => u.id));
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedUsers.length === 0) return;
+
+    // REGLA: Más de 1 usuario requiere contraseña
+    if (selectedUsers.length > 1) {
+      const { value: password } = await Swal.fire({
+        title: 'Acción Protegida',
+        text: `Se eliminarán ${selectedUsers.length} usuarios filtrados. Ingrese la contraseña maestra:`,
+        input: 'password',
+        inputPlaceholder: 'Contraseña de administrador',
+        showCancelButton: true,
+        confirmButtonText: 'Confirmar Borrado Masivo',
+        cancelButtonText: 'Cancelar',
+        ...swalTheme,
+      });
+
+      if (!password) return;
+
+      if (password !== '1234567890') {
+        return Swal.fire({
+          title: 'Acceso Denegado',
+          text: 'La contraseña es incorrecta.',
+          icon: 'error',
+          ...swalTheme
         });
-        mutate('/api/users'); // Revalida los datos para actualizar la UI
-        Swal.fire({ title: 'Estado actualizado', text: 'El estado del usuario ha sido cambiado.', icon: 'success', ...swalTheme });
-      } catch (err) {
-        Swal.fire({ title: 'Error', text: 'No se pudo cambiar el estado del usuario.', icon: 'error', ...swalTheme });
       }
+    } else {
+      // Confirmación simple para 1 solo usuario seleccionado en modo masivo
+      const result = await Swal.fire({
+        title: '¿Eliminar usuario seleccionado?',
+        text: 'Esta acción no se puede deshacer.',
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonText: 'Sí, eliminar',
+        ...swalTheme
+      });
+      if (!result.isConfirmed) return;
+    }
+
+    try {
+      Swal.fire({ title: 'Procesando...', allowOutsideClick: false, didOpen: () => Swal.showLoading(), ...swalTheme });
+
+      const response = await fetch('/api/delete-user', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userIds: selectedUsers }),
+      });
+
+      if (!response.ok) throw new Error('Error en el servidor');
+
+      mutate('/api/users');
+      setSelectedUsers([]);
+      setIsSelectionMode(false);
+      Swal.fire({ title: 'Eliminados', text: 'Los usuarios filtrados han sido borrados.', icon: 'success', ...swalTheme });
+    } catch (err) {
+      Swal.fire({ title: 'Error', text: err.message, icon: 'error', ...swalTheme });
+    }
+  };
+
+  const handleToggleActive = async (userId, currentStatus) => {
+    try {
+      await fetch('/api/toggle-active', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ userId }),
+      });
+      mutate('/api/users');
+    } catch (err) {
+      Swal.fire({ title: 'Error', text: 'No se pudo cambiar el estado.', icon: 'error', ...swalTheme });
     }
   };
   
   const handleDeleteUser = async (user) => {
     const result = await Swal.fire({
       title: `¿Eliminar a ${user.fullName}?`,
-      text: '¡Esta acción es irreversible! Se eliminará la cuenta de autenticación y todos los datos del usuario.',
+      text: 'Acción individual inmediata.',
       icon: 'warning',
       showCancelButton: true,
-      confirmButtonColor: '#d33',
-      cancelButtonColor: '#6b7280',
-      confirmButtonText: 'Sí, eliminar',
-      cancelButtonText: 'Cancelar',
+      confirmButtonText: 'Eliminar',
       ...swalTheme,
     });
 
     if (result.isConfirmed) {
       try {
-        const response = await fetch('/api/delete-user', {
+        await fetch('/api/delete-user', {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ userId: user.id }),
         });
-
-        if (!response.ok) {
-          const errorData = await response.json();
-          throw new Error(errorData.error || 'Error al eliminar usuario');
-        }
-
-        mutate('/api/users'); 
-        Swal.fire({ title: 'Usuario Eliminado', text: 'El usuario ha sido eliminado correctamente.', icon: 'success', ...swalTheme });
+        mutate('/api/users');
+        Swal.fire({ title: 'Eliminado', icon: 'success', timer: 1500, showConfirmButton: false, ...swalTheme });
       } catch (err) {
-        console.error("Error al eliminar usuario:", err);
-        Swal.fire({ title: 'Error', text: err.message || 'No se pudo eliminar el usuario.', icon: 'error', ...swalTheme });
+        Swal.fire({ title: 'Error', text: err.message, icon: 'error', ...swalTheme });
       }
     }
   };
 
   if (!isLoaded || !usersData) {
       return (
-        <section 
-          className="min-h-screen flex items-center justify-center"
-          style={{ backgroundColor: isDark ? '#111827' : '#f9fafb' }}
-        >
-          <p style={{ color: isDark ? '#f9fafb' : '#111827' }} className="text-lg animate-pulse">
-            Cargando usuarios...
-          </p>
+        <section className="min-h-screen flex items-center justify-center" style={{ backgroundColor: isDark ? '#111827' : '#f9fafb' }}>
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+            <p style={{ color: isDark ? '#f9fafb' : '#111827' }}>Sincronizando base de datos...</p>
+          </div>
         </section>
       );
   }
 
-  if (error) {
-    return (
-      <section 
-        className="min-h-screen flex items-center justify-center"
-        style={{ backgroundColor: isDark ? '#111827' : '#f9fafb' }}
-      >
-        <p className="text-lg text-red-500">
-          Error al cargar usuarios. Intenta recargar la página.
-        </p>
-      </section>
-    );
-  }
-
-  const containerStyle = { backgroundColor: isDark ? '#111827' : '#f9fafb' };
-  const textStyle = { color: isDark ? '#f9fafb' : '#111827' };
-  const inputStyle = {
-    backgroundColor: isDark ? '#1f2937' : '#ffffff',
-    color: isDark ? '#f9fafb' : '#111827',
-    borderColor: isDark ? '#374151' : '#e5e7eb',
-    '--tw-ring-color': isDark ? '#60a5fa' : '#3b82f6'
-  };
-  const tableBgStyle = { backgroundColor: isDark ? '#1f2937' : '#ffffff' };
-  const tableHeaderStyle = { backgroundColor: isDark ? '#374151' : '#f3f4f6' };
-  const tableCellStyle = { color: isDark ? '#d1d5db' : '#374151' };
-  const rowHoverStyle = isDark ? 'rgba(55, 65, 81, 0.5)' : '#f9fafb';
-
   return (
-    <div 
-      className="p-4 md:p-6 min-h-screen transition-colors duration-300"
-      style={containerStyle}
-    >
+    <div className="p-4 md:p-6 min-h-screen transition-all duration-300" style={{ backgroundColor: isDark ? '#111827' : '#f9fafb' }}>
+      
+      {/* HEADER DINÁMICO */}
       <div className="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
-        <h1 className="text-3xl font-bold" style={{ color: isDark ? '#60a5fa' : '#3b82f6' }}>Gestión de Usuarios</h1>
-        <button
-          onClick={() => router.push('/admin/users/create')}
-          className="bg-blue-600 hover:bg-blue-700 transition-all duration-200 px-4 py-2 rounded-lg shadow-lg font-semibold w-full md:w-auto text-white"
-        >
-          + Nuevo Usuario
-        </button>
+        <div className="flex items-center gap-3">
+            <h1 className="text-3xl font-bold" style={{ color: isDark ? '#60a5fa' : '#3b82f6' }}>Usuarios</h1>
+            {isSelectionMode && (
+                <span className="bg-red-500 text-white text-xs px-2 py-1 rounded-full animate-pulse">MODO SELECCIÓN</span>
+            )}
+        </div>
+
+        <div className="flex gap-2 w-full md:w-auto">
+          {!isSelectionMode ? (
+            <button
+              onClick={() => setIsSelectionMode(true)}
+              className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg shadow flex items-center gap-2 transition-all"
+            >
+              <ListChecks className="w-4 h-4" />
+              Selección Múltiple
+            </button>
+          ) : (
+            <div className="flex gap-2 flex-1 md:flex-none">
+                <button
+                    onClick={handleBulkDelete}
+                    disabled={selectedUsers.length === 0}
+                    className={`px-4 py-2 rounded-lg shadow font-semibold flex items-center gap-2 transition-all ${selectedUsers.length > 0 ? 'bg-red-600 hover:bg-red-700 text-white' : 'bg-gray-400 text-gray-200 cursor-not-allowed'}`}
+                >
+                    <Trash2 className="w-4 h-4" />
+                    Eliminar ({selectedUsers.length})
+                </button>
+                <button
+                    onClick={() => { setIsSelectionMode(false); setSelectedUsers([]); }}
+                    className="bg-gray-200 text-gray-800 px-4 py-2 rounded-lg hover:bg-gray-300 transition-all flex items-center gap-2"
+                >
+                    <X className="w-4 h-4" />
+                    Cancelar
+                </button>
+            </div>
+          )}
+          
+          <button
+            onClick={() => router.push('/admin/users/create')}
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg shadow flex items-center gap-2 transition-all"
+          >
+            <UserPlus className="w-4 h-4" />
+            Nuevo
+          </button>
+        </div>
       </div>
 
-      <input
-        type="text"
-        placeholder="Buscar por nombre, correo, profesión o teléfono..."
-        value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
-        className="w-full mb-6 p-3 rounded-lg border focus:outline-none focus:ring-2"
-        style={inputStyle}
-      />
+      {/* BUSCADOR */}
+      <div className="relative mb-6">
+        <input
+          type="text"
+          placeholder="Filtrar por nombre, correo o teléfono..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+          className={`w-full p-4 rounded-xl border transition-all focus:ring-2 outline-none ${isDark ? 'bg-gray-800 border-gray-700 text-white focus:ring-blue-500' : 'bg-white border-gray-200 text-gray-900 focus:ring-blue-400'}`}
+        />
+      </div>
 
-      <div className="overflow-x-auto rounded-lg shadow-lg border" style={{borderColor: inputStyle.borderColor}}>
-        <table className="min-w-full" style={tableBgStyle}>
-          <thead style={tableHeaderStyle}>
+      {/* TABLA */}
+      <div className={`overflow-x-auto rounded-xl shadow-2xl border transition-all ${isDark ? 'border-gray-800' : 'border-gray-100'}`}>
+        <table className="min-w-full" style={{ backgroundColor: isDark ? '#1f2937' : '#ffffff' }}>
+          <thead style={{ backgroundColor: isDark ? '#374151' : '#f3f4f6' }}>
             <tr>
-              {['Nombre', 'Correo', 'fechaExamen', 'Estado', 'Pago Único', 'Teléfono', 'Acciones'].map(header => (
-                <th key={header} className="py-3 px-4 text-left text-sm font-semibold uppercase tracking-wider" style={{ color: isDark ? '#f9fafb' : '#374151' }}>{header}</th>
+              {isSelectionMode && (
+                <th className="py-4 px-4 text-left w-10">
+                    <input 
+                    type="checkbox" 
+                    checked={selectedUsers.length === filteredUsers.length && filteredUsers.length > 0}
+                    onChange={toggleSelectAll}
+                    className="w-5 h-5 cursor-pointer accent-blue-500"
+                    />
+                </th>
+              )}
+              {['Nombre', 'Correo', 'Estado', 'Pago Único', 'Teléfono', 'Acciones'].map(header => (
+                <th key={header} className="py-4 px-4 text-left text-xs font-bold uppercase tracking-widest" style={{ color: isDark ? '#9ca3af' : '#6b7280' }}>{header}</th>
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y" style={{borderColor: inputStyle.borderColor}}>
-            {filteredUsers.map((user) => (
-              <tr 
-                key={user.id} 
-                className="transition-colors duration-200"
-                onMouseOver={(e) => e.currentTarget.style.backgroundColor = rowHoverStyle}
-                onMouseOut={(e) => e.currentTarget.style.backgroundColor = ''}
-              >
-                <td className="py-3 px-4 whitespace-nowrap" style={tableCellStyle}>{user.fullName}</td>
-                <td className="py-3 px-4 whitespace-nowrap" style={tableCellStyle}>{user.email}</td>
-                <td className="py-3 px-4 whitespace-nowrap" style={tableCellStyle}>{user.fechaExamen || 'N/A'}</td>
-                <td className="py-3 px-4">
-                  <span className={`px-2 py-1 text-xs rounded-full ${user.active ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}`}>
-                    {user.active ? 'Activo' : 'Inactivo'}
+          <tbody className="divide-y divide-gray-700/20">
+            {filteredUsers.length > 0 ? filteredUsers.map((user) => (
+              <tr key={user.id} className={`transition-all ${selectedUsers.includes(user.id) ? (isDark ? 'bg-blue-900/20' : 'bg-blue-50') : 'hover:bg-black/5'}`}>
+                {isSelectionMode && (
+                  <td className="py-4 px-4">
+                    <input 
+                      type="checkbox" 
+                      checked={selectedUsers.includes(user.id)}
+                      onChange={() => toggleSelectUser(user.id)}
+                      className="w-5 h-5 cursor-pointer accent-blue-600"
+                    />
+                  </td>
+                )}
+                <td className="py-4 px-4 font-medium" style={{ color: isDark ? '#f3f4f6' : '#111827' }}>{user.fullName}</td>
+                <td className="py-4 px-4 text-sm" style={{ color: isDark ? '#9ca3af' : '#4b5563' }}>{user.email}</td>
+                <td className="py-4 px-4">
+                  <span onClick={() => handleToggleActive(user.id, user.active)} className={`cursor-pointer px-3 py-1 text-xs font-bold rounded-full transition-all hover:scale-105 ${user.active ? 'bg-green-500/20 text-green-500 border border-green-500/50' : 'bg-red-500/20 text-red-500 border border-red-500/50'}`}>
+                    {user.active ? 'ACTIVO' : 'INACTIVO'}
                   </span>
                 </td>
-                <td className="py-3 px-4 whitespace-nowrap">
-                  <div className="flex items-center gap-2">
-                    {user.hasPagoUnicoAccess ? (
-                      <>
-                        <CheckCircle className="w-5 h-5 text-green-500" />
-                        <span className="text-sm font-medium" style={tableCellStyle}>Sí</span>
-                      </>
-                    ) : (
-                      <>
-                        <XCircle className="w-5 h-5 text-red-500" />
-                        <span className="text-sm font-medium" style={tableCellStyle}>No</span>
-                      </>
-                    )}
-                  </div>
+                <td className="py-4 px-4">
+                  {user.hasPagoUnicoAccess ? <CheckCircle className="w-5 h-5 text-green-500" /> : <XCircle className="w-5 h-5 text-red-400 opacity-30" />}
                 </td>
-                <td className="py-3 px-4 whitespace-nowrap" style={tableCellStyle}>
+                <td className="py-4 px-4 text-sm" style={{ color: isDark ? '#9ca3af' : '#4b5563' }}>{user.telefono || '---'}</td>
+                <td className="py-4 px-4">
                   <div className="flex items-center gap-2">
-                    <Phone className="w-4 h-4 text-gray-400" />
-                    <span>{user.telefono || 'N/A'}</span>
-                  </div>
-                </td>
-                <td className="py-3 px-4">
-                  <div className="flex items-center gap-2">
-                    <button onClick={() => router.push(`/admin/users/edit/${user.id}`)} className="bg-yellow-500 hover:bg-yellow-600 text-white px-3 py-1 rounded-md text-sm font-medium">Editar</button>
-                    <button 
-                      onClick={() => handleToggleActive(user.id, user.active)} 
-                      className={`text-white px-3 py-1 rounded-md text-sm font-medium transition-colors duration-200 ${user.active ? 'bg-red-600 hover:bg-red-700' : 'bg-green-600 hover:bg-green-700'}`}>
-                      {user.active ? 'Inactivar' : 'Activar'}
-                    </button>
-                    <button onClick={() => handleDeleteUser(user)} className="bg-gray-600 hover:bg-red-800 text-white p-2 rounded-md transition-colors duration-200" title="Borrar usuario">
-                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M5.5 5.5A.5.5 0 0 1 6 6v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m2.5 0a.5.5 0 0 1 .5.5v6a.5.5 0 0 1-1 0V6a.5.5 0 0 1 .5-.5m3 .5a.5.5 0 0 0-1 0v6a.5.5 0 0 0 1 0z"/><path d="M14.5 3a1 1 0 0 1-1 1H13v9a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V4h-.5a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1H6a1 1 0 0 1 1-1h2a1 1 0 0 1 1 1h3.5a1 1 0 0 1 1 1zM4.118 4 4 4.059V13a1 1 0 0 0 1 1h6a1 1 0 0 0 1-1V4.059L11.882 4zM2.5 3h11V2h-11z"/></svg>
+                    <button onClick={() => router.push(`/admin/users/edit/${user.id}`)} className="text-blue-500 hover:text-blue-600 p-2 rounded-lg hover:bg-blue-500/10 transition-all">Editar</button>
+                    <button onClick={() => handleDeleteUser(user)} className="text-red-500 hover:text-red-600 p-2 rounded-lg hover:bg-red-500/10 transition-all">
+                      <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
                 </td>
               </tr>
-            ))}
+            )) : (
+              <tr>
+                <td colSpan="7" className="py-10 text-center text-gray-500 italic">No se encontraron usuarios que coincidan con la búsqueda.</td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>

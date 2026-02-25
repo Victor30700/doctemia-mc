@@ -5,20 +5,10 @@ import { auth as adminAuth, db } from '@/lib/firebase-admin';
 export async function POST(request) {
   try {
     if (!adminAuth || !db) {
-      const missing = [];
-      if (!process.env.FIREBASE_PROJECT_ID) missing.push('PROJECT_ID');
-      if (!process.env.FIREBASE_CLIENT_EMAIL) missing.push('CLIENT_EMAIL');
-      if (!process.env.FIREBASE_PRIVATE_KEY) missing.push('PRIVATE_KEY');
-      
-      console.error("Firebase Admin no inicializado. Faltan:", missing.join(', '));
-      return NextResponse.json({ 
-        error: 'Configuración del servidor incompleta', 
-        details: `Faltan variables: ${missing.join(', ')}` 
-      }, { status: 500 });
+      return NextResponse.json({ error: 'Servidor no inicializado (Firebase)' }, { status: 500 });
     }
 
     const { token } = await request.json();
-
     if (!token) {
       return NextResponse.json({ error: 'Token no proporcionado' }, { status: 400 });
     }
@@ -26,100 +16,71 @@ export async function POST(request) {
     const decodedToken = await adminAuth.verifyIdToken(token, true);
     const uid = decodedToken.uid;
     const email = decodedToken.email;
-    const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'admin@admin.com'; // Usa variable de entorno o fallback
+    const adminEmail = process.env.NEXT_PUBLIC_ADMIN_EMAIL || 'admin@admin.com';
 
-    let role = 'user'; // Rol por defecto
-    let userData = null; // Datos del usuario de Firestore (si no es admin)
+    let role = 'user';
 
-    // *** INICIO: Lógica específica para Admin ***
     if (email === adminEmail) {
-      console.log(`Login detectado para Admin: ${email}`);
       role = 'admin';
-      // Para el admin, no necesitamos verificar Firestore por 'active'
-      // Asumimos que el admin siempre está activo si se autentica.
-      // También puedes verificar el custom claim si lo configuraste
-      if (decodedToken.role === 'admin') {
-          console.log("Custom claim 'admin' verificado para el admin.");
-      } else {
-          console.warn(`Admin ${email} no tiene el custom claim 'role: admin'. Considera ejecutar setAdmin.js.`);
-          // Igual le damos rol admin por el email, pero es bueno tener el claim.
-      }
-    }
-    // *** FIN: Lógica específica para Admin ***
-    else {
-      // *** INICIO: Lógica para usuarios normales ***
-      console.log(`Login detectado para Usuario Normal: ${email}`);
+    } else {
       const userDocRef = db.collection('users').doc(uid);
       const userDocSnap = await userDocRef.get();
 
       if (!userDocSnap.exists) {
-        console.warn(`Usuario normal no encontrado en Firestore con UID: ${uid}, Email: ${email}`);
-        return NextResponse.json({ error: 'Usuario no encontrado en la base de datos' }, { status: 404 });
+        return NextResponse.json({ error: 'Usuario no encontrado' }, { status: 404 });
       }
 
-      userData = userDocSnap.data();
-
-      // Verificar si el usuario normal está activo
+      const userData = userDocSnap.data();
       if (userData.active !== true) {
-        console.log(`Intento de login bloqueado para usuario inactivo: ${email} (UID: ${uid})`);
-        return NextResponse.json({ error: 'Tu cuenta está inactiva. Contacta al administrador para habilitarla.' }, { status: 403 });
+        return NextResponse.json({ error: 'Cuenta inactiva' }, { status: 403 });
       }
-
-      // Asignar rol basado en Firestore o fallback (aunque el claim es preferible si lo usas para usuarios)
       role = decodedToken.role || userData.rol || 'user';
-      console.log(`Usuario normal ${email} activo. Rol asignado: ${role}`);
-      // *** FIN: Lógica para usuarios normales ***
     }
 
-    // --- Lógica Común: Establecer Cookies y Responder ---
-    const sessionCookieOptions = {
-      name: '__session',
-      value: token,
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      path: '/',
-      maxAge: 60 * 60 * 24 * 7, // 7 días
-      sameSite: 'Strict',
-    };
-
-    const roleCookieOptions = {
-      name: 'role',
-      value: role,
-      httpOnly: false, // El middleware necesita leerla
-      secure: process.env.NODE_ENV === 'production',
-      path: '/',
-      maxAge: 60 * 60 * 24 * 7, // 7 días
-      sameSite: 'Strict',
-    };
-
+    const isProduction = process.env.NODE_ENV === 'production';
     const response = NextResponse.json({ ok: true, role: role }, { status: 200 });
-    response.cookies.set(sessionCookieOptions);
-    response.cookies.set(roleCookieOptions);
+    
+    response.cookies.set('__session', token, {
+      httpOnly: true,
+      secure: isProduction,
+      path: '/',
+      maxAge: 60 * 60 * 24 * 7,
+      sameSite: 'Strict',
+    });
 
-    console.log(`Login exitoso y cookies establecidas para: ${email}, Rol: ${role}`);
+    response.cookies.set('role', role, {
+      httpOnly: false,
+      secure: isProduction,
+      path: '/',
+      maxAge: 60 * 60 * 24 * 7,
+      sameSite: 'Strict',
+    });
+
     return response;
 
   } catch (error) {
-    // ... (mismo manejo de errores que antes) ...
-    console.error('Error en /api/login:', error);
+    console.error('Error detallado en login:', error);
+    
     let errorMessage = 'Error interno del servidor.';
     let status = 500;
 
-    if (error.code === 'auth/id-token-expired') {
-        errorMessage = 'La sesión ha expirado, por favor inicia sesión de nuevo.';
+    const errorCode = error.code ? String(error.code) : '';
+
+    if (errorCode === 'auth/id-token-expired') {
+        errorMessage = 'La sesión ha expirado.';
         status = 401;
-    } else if (error.code === 'auth/argument-error' || error.code?.startsWith('auth/invalid')) {
-        errorMessage = 'Token de autenticación inválido o malformado.';
+    } else if (errorCode.includes('auth/invalid') || errorCode === 'auth/argument-error') {
+        errorMessage = 'Token inválido.';
         status = 401;
-    } else if (error.message.includes('Tu cuenta está inactiva')) {
-        errorMessage = error.message;
-        status = 403;
-    } else if (error.status === 404) { // Propagar el 404 si viene de la lógica anterior
-        errorMessage = error.message;
-        status = 404;
+    } else if (errorCode === '8' || error.message?.includes('Quota exceeded')) {
+        errorMessage = 'Límite de cuota de Firebase excedido.';
+        status = 429;
     }
 
-
-    return NextResponse.json({ error: errorMessage }, { status: status });
+    return NextResponse.json({ 
+      error: errorMessage, 
+      details: error.message,
+      code: errorCode 
+    }, { status });
   }
 }

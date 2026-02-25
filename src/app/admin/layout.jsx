@@ -12,8 +12,13 @@ export default function AdminLayout({ children }) {
 
   useEffect(() => {
     if (!loading) {
+      if (!user) {
+        const timeout = setTimeout(() => {
+          router.replace('/login');
+        }, 1000);
+        return () => clearTimeout(timeout);
+      }
       const isAdmin = role === 'admin';
-      if (!user) return router.replace('/login');
       if (!isAdmin) return router.replace('/app');
     }
   }, [loading, user, role, router]);

@@ -8,41 +8,38 @@ function getServiceAccount() {
   const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
   const projectId = process.env.FIREBASE_PROJECT_ID;
 
-  if (!privateKey || !clientEmail || !projectId) {
-    return null;
-  }
+  if (!privateKey || !clientEmail || !projectId) return null;
 
   return {
     projectId,
     clientEmail,
-    // Limpieza profunda de la clave privada para Vercel
     privateKey: privateKey.replace(/\\n/g, '\n').replace(/^"|"$/g, ''),
   };
 }
 
-function initAdmin() {
-  const apps = getApps();
-  if (apps.length > 0) {
-    return apps[0];
-  }
+let app;
 
+if (!getApps().length) {
   const serviceAccount = getServiceAccount();
-  if (!serviceAccount) {
-    console.error('CRÍTICO: Faltan variables de entorno para Firebase Admin.');
-    return null;
+  if (serviceAccount) {
+    try {
+      app = initializeApp({
+        credential: cert(serviceAccount),
+      });
+      // La configuración de Firestore se debe hacer INMEDIATAMENTE después de inicializar la app
+      // y solo una vez.
+      const dbInstance = getFirestore(app);
+      dbInstance.settings({ ignoreUndefinedProperties: true });
+      console.log('Firebase Admin y Firestore inicializados con éxito.');
+    } catch (error) {
+      console.error('Error al inicializar Firebase Admin:', error.message);
+    }
+  } else {
+    console.warn('Faltan variables de entorno para Firebase Admin.');
   }
-
-  try {
-    return initializeApp({
-      credential: cert(serviceAccount),
-    });
-  } catch (error) {
-    console.error('Error al inicializar Firebase Admin:', error.message);
-    return null;
-  }
+} else {
+  app = getApp();
 }
-
-const app = initAdmin();
 
 export const auth = app ? getAuth(app) : null;
 export const db = app ? getFirestore(app) : null;
