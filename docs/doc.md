@@ -28,10 +28,11 @@ Se refactorizó completamente la inicialización de Firebase Admin:
 ### B. Limpieza de Rutas API
 - **Eliminación de `src/app/api/login.js`**: Se eliminó este archivo para seguir estrictamente la convención de `route.js` del App Router de Next.js y evitar el error de "Duplicate API route".
 
-### E. Resolución de Errores de Importación
-Tras modernizar el SDK, se detectaron errores en rutas que aún intentaban importar el objeto global `admin`. Se corrigieron las siguientes rutas para usar las nuevas exportaciones modulares (`auth`, `db`):
-- `/api/clear-subscription/route.js`: Actualizado para usar `db` en lugar de `admin.firestore()`.
-- `/api/update-subscription/route.js`: Actualizado para usar `db` en lugar de `admin.firestore()`.
+### F. Actualización de Seguridad y Compilación
+Se resolvió el error de vulnerabilidad `CVE-2025-66478` detectado por Vercel:
+- **Actualización de Versión**: Se actualizó Next.js a la versión `16.1.6` (latest) y React a la `19.2.4`.
+- **Configuración de Turbopack**: Se habilitó `turbopack: {}` en `next.config.js` para compatibilidad con la nueva versión y el uso de configuraciones personalizadas de Webpack.
+- **Corrección de Errores de Build**: Se detectó que `src/app/marketing/page.jsx` estaba vacío, lo cual es un error en Next.js 16. Se añadió un componente funcional de marcador de posición para permitir la compilación exitosa.
 
 ---
 
