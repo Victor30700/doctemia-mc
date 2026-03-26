@@ -10,7 +10,7 @@ import { useTheme } from '@/context/ThemeContext';
 import {
   Moon, Sun, Home, FileText, Users,
   Wallet, Video, QrCode, Bell, LogOut,
-  Star, ShoppingBag, Tags, KeyRound
+  Star, ShoppingBag, Tags, KeyRound, CreditCard
 } from 'lucide-react';
 
 const convertGoogleDriveUrl = (url) => {
@@ -134,6 +134,7 @@ export default function AdminNavbar({ children }) {
     { type: 'link', href: '/admin/Cursos_Pago_Unico/categoria', label: 'Categorías', icon: <Tags className="w-5 h-5" /> },
     { type: 'separator' },
     { type: 'link', href: '/admin/bank-preguntas', label: 'Exámenes', icon: <FileText className="w-5 h-5" /> },
+    { type: 'link', href: '/admin/flashcards', label: 'Tarjetas', icon: <CreditCard className="w-5 h-5" /> },
     { type: 'link', href: '/admin/solicitudes', label: 'Solicitudes Premium', icon: <Wallet className="w-5 h-5" /> },
     { type: 'link', href: '/admin/solicitudes-pago-unico', label: 'Solicitudes de Acceso', icon: <KeyRound className="w-5 h-5" /> },
     { type: 'separator' },

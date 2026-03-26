@@ -131,13 +131,23 @@ export default function QRGestionPage() {
                 <h2 className="text-lg font-semibold mb-2 flex items-center gap-2">
                     <Upload size={20} /> Código QR para Pagos
                 </h2>
-                {qrUrl && (
-                    <div className="mb-4">
-                        <p className="font-medium mb-2">QR Actual:</p>
-                        {/* ✨ 4. USAR EL COMPONENTE IMAGE */}
-                        <Image src={qrUrl} alt="QR Actual" width={160} height={160} className="rounded-lg border-2" style={{ borderColor: isDark ? '#4b5563' : '#d1d5db' }} />
-                    </div>
-                )}
+                {qrUrl && (() => {
+                    try {
+                        if (qrUrl.startsWith('http')) {
+                            const url = new URL(qrUrl);
+                            if (!url.hostname) return null;
+                        }
+                        return (
+                            <div className="mb-4">
+                                <p className="font-medium mb-2">QR Actual:</p>
+                                {/* ✨ 4. USAR EL COMPONENTE IMAGE */}
+                                <Image src={qrUrl} alt="QR Actual" width={160} height={160} className="rounded-lg border-2" style={{ borderColor: isDark ? '#4b5563' : '#d1d5db' }} />
+                            </div>
+                        );
+                    } catch (e) {
+                        return null;
+                    }
+                })()}
                 <label htmlFor="newQrLink" className="block font-medium mb-1">
                     Nuevo enlace de imagen QR (opcional):
                 </label>
@@ -151,13 +161,23 @@ export default function QRGestionPage() {
                 />
             </div>
 
-            {preview && (
-                <div className="mb-6">
-                    <p className="text-sm mb-2">Previsualización del nuevo QR:</p>
-                    {/* ✨ 4. USAR EL COMPONENTE IMAGE */}
-                    <Image src={preview} alt="Previsualización" width={160} height={160} className="border rounded-lg" style={{ borderColor: isDark ? '#4b5563' : '#d1d5db' }} />
-                </div>
-            )}
+            {preview && (() => {
+                try {
+                    if (preview.startsWith('http')) {
+                        const url = new URL(preview);
+                        if (!url.hostname) return null;
+                    }
+                    return (
+                        <div className="mb-6">
+                            <p className="text-sm mb-2">Previsualización del nuevo QR:</p>
+                            {/* ✨ 4. USAR EL COMPONENTE IMAGE */}
+                            <Image src={preview} alt="Previsualización" width={160} height={160} className="border rounded-lg" style={{ borderColor: isDark ? '#4b5563' : '#d1d5db' }} />
+                        </div>
+                    );
+                } catch (e) {
+                    return null;
+                }
+            })()}
 
             <button
                 onClick={handleUpdateInfo}

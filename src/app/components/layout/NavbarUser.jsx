@@ -56,6 +56,7 @@ export default function NavbarUser({ children }) {
     no puede comenzar dos carpetas con la misma palabra porque se van a activar las dos en el sidebar*/
     { href: '/app/pagoUnicoCourses', label: 'Cursos', Icon: BookMarked },
     { type: 'separator', label: 'Herramientas' },
+    { href: '/app/flashcards', label: 'Tarjetas de Estudio', Icon: Star },
     { href: '/app/examen-test', label: 'Exámenes', Icon: FileText },
     { href: '/app/clases-en-vivo', label: 'Clases en Vivo', Icon: Video },
     { type: 'separator', label: 'Cuenta' },

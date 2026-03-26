@@ -4,7 +4,9 @@ const path = require('path');
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Configuración de Turbopack para Next.js 16+
-  turbopack: {},
+  turbopack: {
+    root: __dirname, // <-- AQUÍ ESTÁ LA MAGIA: Forzamos la raíz del proyecto
+  },
   
   images: {
     remotePatterns: [

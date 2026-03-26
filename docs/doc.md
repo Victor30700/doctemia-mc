@@ -1,75 +1,66 @@
-# Documentación de Correcciones y Mejoras Técnicas
+# 🩺 Documentación Técnica: Sistema DOCTEMIA MC
 
-Este documento detalla las modificaciones realizadas para resolver los errores 500 en el entorno de producción (Vercel) y mejorar la estabilidad de la conexión con la base de datos Firebase.
+## 1. Descripción General
+**DOCTEMIA MC** es una plataforma avanzada de aprendizaje médico diseñada para la preparación de exámenes de grado y formación continua. El sistema utiliza un modelo de **acceso controlado por administración**, donde los usuarios solicitan inscripciones y el administrador gestiona los permisos de forma centralizada.
 
-## 1. Problema Identificado
-Se reportaron errores `500 (Internal Server Error)` en las rutas `/api/login` y `/api/users` al estar desplegado en Vercel. Esto impedía el inicio de sesión y la visualización de usuarios en el sistema.
-
-### Causas principales:
-- **SDK Incompatible**: Se utilizaba la sintaxis antigua de `firebase-admin`, que presentaba problemas de inicialización en entornos ESM (Next.js 15).
-- **Conflicto de Rutas**: Existía un archivo `src/app/api/login.js` que colisionaba con el directorio `src/app/api/login/route.js`, causando ambigüedad en el enrutamiento de Next.js.
-- **Gestión de Claves Privadas**: La clave privada de Firebase en las variables de entorno de Vercel a menudo requiere un tratamiento específico para los saltos de línea (`\n`).
-- **Falta de Validación**: Las rutas API intentaban usar la base de datos sin verificar si la inicialización de Firebase Admin había sido exitosa.
-
----
-
-## 2. Cambios Realizados
-
-### A. Modernización de `src/lib/firebase-admin.js`
-Se refactorizó completamente la inicialización de Firebase Admin:
-- **SDK Modular**: Migración a `firebase-admin/app`, `firebase-admin/auth` y `firebase-admin/firestore`.
-- **Detección de Entorno**: El código ahora prioriza las variables de entorno (Vercel) y mantiene un fallback seguro para el archivo `serviceAccountKey.json` en desarrollo local.
-- **Tratamiento de Clave Privada**: Se implementó una limpieza robusta para la `FIREBASE_PRIVATE_KEY`:
-  ```javascript
-  privateKey: privateKey.replace(/\\n/g, '\n').replace(/^"|"$/g, '')
-  ```
-  Esto corrige el error común donde las comillas o los caracteres de escape rompen la clave.
-
-### B. Limpieza de Rutas API
-- **Eliminación de `src/app/api/login.js`**: Se eliminó este archivo para seguir estrictamente la convención de `route.js` del App Router de Next.js y evitar el error de "Duplicate API route".
-
-### G. Corrección del Error de Logout
-Tras la actualización a Next.js 16, se detectó un error al cerrar sesión (`Failed to logout`).
-- **Causa**: En las versiones más recientes de Next.js, la función `cookies()` de `next/headers` es asíncrona y debe ser esperada (`await`).
-- **Solución**: Se actualizó `/api/logout/route.js` para usar `await cookies()`, permitiendo que las cookies de sesión se eliminen correctamente sin colapsar el servidor.
-
-### H. Robustez en la Creación de Usuarios
-Se corrigió un error recurrente donde el sistema reportaba que un correo electrónico ya estaba en uso, a pesar de no figurar en la base de datos (Firestore).
-- **Causa**: "Usuarios fantasma" creados en Firebase Authentication pero con fallos previos en la escritura de Firestore.
-- **Solución en API (`/api/create-user`)**:
-    *   **Manejo de Duplicados**: Si el usuario ya existe en Auth, el sistema ahora lo recupera (`getUserByEmail`) y procede a completar su registro en Firestore en lugar de lanzar un error 500.
-    *   **Normalización**: Se implementó la limpieza automática de espacios y conversión a minúsculas para los correos electrónicos.
-- **Mejoras en Frontend (`admin/users/create` y `register`)**:
-    *   **Limpieza de Datos**: Se añadió `.trim()` al campo de correo antes de enviarlo.
-    *   **Validación de Contraseña**: Se incluyó una verificación de longitud mínima (6 caracteres) para cumplir con los requisitos de Firebase y evitar errores silenciosos del servidor.
-
-### I. Corrección del Bucle Infinito de Redirección (Infinite Redirect Loop)
-Se resolvió un problema crítico donde los usuarios quedaban atrapados en una pantalla de carga infinita al intentar acceder a `/login` o rutas protegidas (`/app`, `/admin`).
-
-- **Causa**: Desincronización entre el servidor (Middleware) y el cliente (Firebase Auth). El Middleware detectaba una cookie `__session` residual y redirigía al usuario a `/app`. Una vez ahí, Firebase Auth confirmaba que no había una sesión activa y el Layout redirigía de vuelta a `/login`, repitiendo el ciclo infinitamente.
-- **Solución Implementada**:
-    - **Limpieza Automática**: Se modificaron los archivos `src/app/app/layout.jsx` y `src/app/admin/layout.jsx` para ejecutar una limpieza proactiva. Si el estado de autenticación es nulo pero existe una cookie, el sistema llama al endpoint `/api/logout` mediante un `fetch` antes de realizar la redirección.
-    - **Feedback Visual**: Se actualizó la interfaz de usuario para mostrar el mensaje: *"Limpiando sesión e iniciando redirección al login..."* junto con un indicador de carga (spinner), eliminando la confusión de la "pantalla blanca".
-- **Impacto**: Esta mejora elimina la necesidad de que los usuarios borren manualmente sus cookies o datos de navegación para solucionar errores de acceso. El sistema ahora se "autocorrige" al detectar sesiones huérfanas.
+## 2. Stack Tecnológico
+- **Framework:** Next.js (App Router) + React 19.
+- **Estilos:** Tailwind CSS (v4) con soporte para temas dinámicos (Dark/Light).
+- **Backend:** Firebase (Firestore como base de datos NoSQL y Firebase Auth para gestión de identidad).
+- **Estado Global:** React Context API (`AuthContext` y `ThemeContext`).
+- **Seguridad:** Middleware nativo de Next.js para control de acceso y componentes personalizados para protección de contenido multimedia.
 
 ---
 
-## 3. Instrucciones de Configuración en Vercel
+## 3. Arquitectura del Sistema
 
-Para que estos cambios funcionen correctamente, es obligatorio configurar las siguientes variables en el panel de Vercel (**Settings > Environment Variables**):
+### 🛡️ Middleware y Control de Acceso (`src/middleware.js`)
+El sistema implementa una capa de seguridad a nivel de red que intercepta cada solicitud:
+- **Validación de Sesión:** Verifica la existencia de la cookie `__session`.
+- **Rutas Protegidas:** 
+    - `/admin/**`: Solo accesible para usuarios con el rol `admin`.
+    - `/app/**`: Solo accesible para usuarios autenticados.
+- **Redirección Inteligente:** Si un usuario logueado intenta acceder a `/login`, el middleware lo redirige automáticamente a su panel correspondiente (`/admin` o `/app`) según su rol.
 
-| Variable | Descripción |
-| :--- | :--- |
-| `FIREBASE_PROJECT_ID` | ID de tu proyecto en Firebase. |
-| `FIREBASE_CLIENT_EMAIL` | Email de la cuenta de servicio (service account). |
-| `FIREBASE_PRIVATE_KEY` | La clave privada completa, incluyendo los encabezados de BEGIN/END. |
-| `NEXT_PUBLIC_ADMIN_EMAIL` | Email definido para el rol de administrador. |
+### 👨‍💼 Módulo Administrativo (`src/app/admin`)
+El "Cerebro" del sistema, diseñado para la gestión integral:
+- **Gestión de Solicitudes:** Centraliza las peticiones de los usuarios en dos categorías:
+    1. **Inscripción a Cursos:** Al confirmar el pago, el curso se vincula permanentemente al perfil del usuario.
+    2. **Acceso a Exámenes:** Habilita el módulo de tests interactivos para el estudiante.
+- **Banco de Preguntas:** Interfaz para la creación de exámenes con lógica de validación y almacenamiento en Firestore.
+- **Control de Usuarios:** CRUD completo de estudiantes, permitiendo activar o suspender cuentas instantáneamente.
+- **Clases en Vivo:** Gestión de enlaces y horarios para sesiones sincrónicas.
 
-> **Nota sobre la Clave Privada**: Al pegar la clave en Vercel, no es necesario añadir comillas manuales; el código se encarga de procesar los saltos de línea.
+### 🎓 Módulo de Usuario (`src/app/app`)
+Una interfaz inmersiva y moderna centrada en el estudiante:
+- **Dashboard Dinámico:** Presenta un entorno visual con video de fondo, clima local sincronizado (Open-Meteo API) y accesos rápidos.
+- **Visualizador de Contenido:** Acceso a cursos adquiridos, exámenes de práctica y clases en vivo.
+- **Flujo de Solicitud:** Los usuarios pueden explorar cursos y solicitar acceso, lo que dispara una notificación en el panel de administración.
 
 ---
 
-## 4. Validación
-- Se ejecutó `npm run lint` para asegurar la integridad sintáctica del proyecto.
-- Se verificó que el Middleware no bloquee las nuevas validaciones de las rutas API.
-- Se mantuvo la compatibilidad con el sistema de temas (Dark Mode) y las alertas de SweetAlert2 en el frontend.
+## 4. Seguridad y Protección de Contenido (Core del Proyecto)
+
+Uno de los pilares fundamentales de DOCTEMIA MC es la **protección de la propiedad intelectual**. Se ha implementado un componente crítico: `ProtectedVideoPlayer.jsx`.
+
+### 🛡️ Mecanismos de Blindaje:
+1. **Bloqueo de Inspección:**
+    - Deshabilitación total del menú contextual (clic derecho).
+    - Bloqueo de atajos de teclado de desarrollo: `F12`, `Ctrl+Shift+I`, `Ctrl+Shift+J`, `Ctrl+Shift+C`.
+    - Bloqueo de visualización de código fuente: `Ctrl+U`.
+2. **Prevención de Descargas y Copias:**
+    - Bloqueo de comandos de guardado e impresión: `Ctrl+S`, `Ctrl+P`.
+    - Deshabilitación de selección de texto y arrastre de elementos.
+3. **Detección de Developer Tools:**
+    - El sistema monitorea constantemente las dimensiones de la ventana. Si detecta que las herramientas de desarrollo se han abierto, el reproductor se bloquea y muestra una advertencia de seguridad.
+4. **Ofuscación de Reproductor (Anti-YouTube Direct Access):**
+    - Se utiliza una **capa invisible (overlay)** sobre el video. Esto impide que el usuario pueda hacer clic derecho sobre el reproductor de YouTube para obtener la URL del video o copiar el código de inserción.
+    - Configuración estricta de la API de YouTube: `controls: 0`, `modestbranding: 1`, `disablekb: 1`, `rel: 0`.
+
+---
+
+## 5. Estructura de Datos (Firestore)
+- **`users`**: Almacena el perfil, rol, estado y los registros de acceso (`cursosPagados`, `hasExamenTestAccess`).
+- **`courses` / `Cursos_Pago_Unico`**: Contiene la metadata de las clases, videos y materiales.
+- **`solicitudes` / `examenTest_solicitudes`**: Buffer temporal donde llegan las peticiones de los usuarios para ser procesadas por el admin.
+- **`questionBank`**: Almacena las preguntas y respuestas para los simulacros de examen.
