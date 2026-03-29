@@ -6,6 +6,11 @@
 export function formatDriveUrl(url) {
   if (!url || typeof url !== 'string') return url;
 
+  // Solo procesar si es un dominio de Google Drive
+  if (!url.includes('drive.google.com') && !url.includes('googleusercontent.com')) {
+    return url;
+  }
+
   // Manejar links que ya son directos o thumbnails para no procesarlos de nuevo
   if (url.includes('drive.google.com/uc?') || url.includes('drive.google.com/thumbnail?')) {
     return url;

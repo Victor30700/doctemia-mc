@@ -102,13 +102,20 @@ export default function StudentFlashcardsPage() {
         // Fetch questions for critical cards
         if (stats.criticalCards.length > 0) {
           const questions = {};
+          const validCriticalCards = [];
+
           for (const card of stats.criticalCards) {
             const cardDoc = await getDocs(query(collection(db, 'flashcards'), where('__name__', '==', card.id)));
             if (!cardDoc.empty) {
               questions[card.id] = cardDoc.docs[0].data().pregunta;
+              validCriticalCards.push(card);
             }
+            // Si cardDoc está vacío, es un huérfano y no lo añadimos a validCriticalCards
           }
+          
           setCriticalQuestions(questions);
+          // Solo mostramos las tarjetas que realmente existen
+          setMetrics(prev => ({ ...prev, criticalCards: validCriticalCards }));
         }
       } catch (error) {
         console.error("Error fetching metrics:", error);

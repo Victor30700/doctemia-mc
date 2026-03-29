@@ -5,6 +5,7 @@ import {
   setDoc, 
   getDoc,
   getDocs, 
+  collectionGroup,
   query, 
   where, 
   Timestamp,
@@ -38,6 +39,7 @@ export async function saveFlashcardProgress(userId, flashcardId, revisionData, s
     
     await setDoc(progressRef, {
       ...revisionData,
+      cardId: flashcardId, // Guardamos el ID para borrado en cascada
       subtemaName: subtemaName || 'General',
       nextReview: Timestamp.fromDate(revisionData.nextReview),
       lastUpdated: Timestamp.now(),
@@ -55,11 +57,51 @@ export async function saveFlashcardProgress(userId, flashcardId, revisionData, s
 }
 
 /**
+ * Elimina una flashcard y todo su progreso asociado en una transacción atómica.
+ * Si el índice de collectionGroup no existe, al menos elimina la tarjeta principal.
+ * @param {string} cardId - ID de la tarjeta a eliminar.
+ */
+export async function deleteFlashcardCompleta(cardId) {
+  try {
+    const batch = writeBatch(db);
+    
+    // 1. Referencia a la tarjeta principal (SIEMPRE se debe eliminar)
+    const cardRef = doc(db, 'flashcards', cardId);
+    batch.delete(cardRef);
+
+    // 2. Intentar borrar el progreso huérfano en todas las subcolecciones de usuarios
+    // NOTA: Requiere un índice de COLLECTION_GROUP_ASC para 'flashcards_progress' y campo 'cardId'
+    try {
+      const progressQuery = query(collectionGroup(db, 'flashcards_progress'), where('cardId', '==', cardId));
+      const progressSnapshot = await getDocs(progressQuery);
+      
+      progressSnapshot.forEach((docSnap) => {
+        batch.delete(docSnap.ref);
+      });
+    } catch (indexError) {
+      console.warn("No se pudo realizar el borrado en cascada del progreso. Posible falta de índice en Firestore:", indexError.message);
+      // No lanzamos el error para permitir que al menos la tarjeta principal se elimine
+    }
+
+    // 3. Ejecutar transacción
+    await batch.commit();
+  } catch (error) {
+    console.error("Error al eliminar flashcard:", error);
+    throw error;
+  }
+}
+
+/**
  * Obtiene métricas generales de progreso para el Dashboard.
  * @param {string} userId - ID del usuario.
  */
 export async function getFlashcardMetrics(userId) {
   try {
+    // 1. Obtener IDs de todas las flashcards existentes para evitar huérfanos en las métricas
+    const flashcardsRef = collection(db, 'flashcards');
+    const flashSnap = await getDocs(flashcardsRef);
+    const existingCardIds = new Set(flashSnap.docs.map(doc => doc.id));
+
     const progressRef = collection(db, 'users', userId, 'flashcards_progress');
     const snapshot = await getDocs(progressRef);
     
@@ -73,6 +115,9 @@ export async function getFlashcardMetrics(userId) {
       const data = doc.data();
       const cardId = doc.id;
       
+      // SEGURIDAD: Si la tarjeta ya no existe en la colección global, ignorar su progreso
+      if (!existingCardIds.has(cardId)) return;
+
       // EXCLUIR DOMINADAS de los contadores de aprendizaje activo
       if (data.isMastered) return;
 

@@ -30,7 +30,7 @@ export default function NewFlashcardPage() {
     especialidadNombre: '',
     subtema: '',      // Nombre del subtema (Identificador de estudio)
     tags: '',
-    tipo: 'Pregunta-Respuesta'
+    tipo: 'Pregunta'
   });
 
   useEffect(() => {
@@ -311,7 +311,7 @@ export default function NewFlashcardPage() {
                     onChange={handleChange}
                     required
                   >
-                    <option value="Pregunta-Respuesta">Pregunta-Respuesta</option>
+                    <option value="Pregunta">Pregunta</option>
                     <option value="Completar Espacios">Completar Espacios</option>
                     <option value="Caso Clínico Corto">Caso Clínico Corto</option>
                     <option value="Imagen">Imagen</option>
@@ -385,15 +385,15 @@ export default function NewFlashcardPage() {
             {/* Vista Previa de la Tarjeta */}
             <div className={`p-6 rounded-xl shadow-lg border ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-gray-200'}`}>
               <h2 className="text-lg font-semibold mb-4" style={{ color: isDark ? '#60a5fa' : '#1e40af' }}>Vista Previa de la Tarjeta</h2>
-              <div className={`p-6 rounded-xl border-2 border-dashed ${isDark ? 'bg-gray-900/50 border-gray-700' : 'bg-blue-50/50 border-blue-100'}`}>
+              <div className={`p-6 rounded-xl border-2 border-dashed min-h-[200px] flex flex-col ${isDark ? 'bg-gray-900/50 border-gray-700' : 'bg-blue-50/50 border-blue-100'}`}>
                 <div className={`text-[10px] font-bold uppercase tracking-widest mb-2 ${isDark ? 'text-blue-400' : 'text-blue-600'}`}>
                   {formData.subtema || 'TEMA'}
                 </div>
-                <div className={`text-lg font-bold mb-4 ${textColor}`}>
+                <div className={`text-lg font-bold mb-4 break-words whitespace-pre-wrap max-h-[150px] overflow-y-auto custom-scrollbar ${textColor}`}>
                   {formData.pregunta || '¿Tu pregunta aparecerá aquí?'}
                 </div>
-                <div className={`h-px w-full mb-4 ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`}></div>
-                <div className={`text-sm font-medium ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
+                <div className={`h-px w-full mb-4 flex-shrink-0 ${isDark ? 'bg-gray-800' : 'bg-gray-200'}`}></div>
+                <div className={`text-sm font-medium break-words whitespace-pre-wrap max-h-[100px] overflow-y-auto custom-scrollbar ${isDark ? 'text-gray-400' : 'text-gray-600'}`}>
                   {formData.respuesta || 'La respuesta se mostrará al girar.'}
                 </div>
               </div>

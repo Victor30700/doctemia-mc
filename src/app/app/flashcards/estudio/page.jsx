@@ -31,16 +31,27 @@ import Swal from 'sweetalert2';
 function getDriveImageUrl(rawUrl) {
   if (!rawUrl || typeof rawUrl !== 'string') return null;
   try {
-    if (rawUrl.includes('/file/d/')) {
-      const id = rawUrl.split('/file/d/')[1].split('/')[0].split('?')[0];
-      if (id) return `https://drive.google.com/thumbnail?id=${id}&sz=w800`;
-    }
-    if (rawUrl.includes('drive.google.com/uc') || rawUrl.includes('drive.google.com/open')) {
+    // 1. Si ya es una miniatura de Drive, devolverla
+    if (rawUrl.includes('drive.google.com/thumbnail')) return rawUrl;
+
+    // 2. Si es un link de 'uc' (directo), convertir a miniatura para mejor rendimiento
+    if (rawUrl.includes('drive.google.com/uc')) {
       const urlObj = new URL(rawUrl);
       const id = urlObj.searchParams.get('id');
       if (id) return `https://drive.google.com/thumbnail?id=${id}&sz=w800`;
     }
-    if (rawUrl.startsWith('http')) return rawUrl;
+
+    // 3. Si es un link estándar de archivo /file/d/
+    if (rawUrl.includes('/file/d/')) {
+      const id = rawUrl.split('/file/d/')[1].split('/')[0].split('?')[0];
+      if (id) return `https://drive.google.com/thumbnail?id=${id}&sz=w800`;
+    }
+
+    // 4. Si es una URL de imagen estándar (no de Drive)
+    if (rawUrl.startsWith('http') && !rawUrl.includes('drive.google.com')) {
+      return rawUrl;
+    }
+
     return null;
   } catch { return null; }
 }
@@ -58,12 +69,8 @@ function FlashcardContent() {
   const [loading, setLoading] = useState(true);
   const [sessionFinished, setSessionFinished] = useState(false);
   const [isIntensiveMode, setIsIntensiveMode] = useState(false);
-  
-  // Nuevo: Estados para interactividad
-  const [userAnswer, setUserAnswer] = useState('');
-  const [clozeAnswers, setClozeAnswers] = useState({});
 
-  // Función para renderizar la pregunta Cloze con inputs inline
+  // Función para renderizar la pregunta Cloze mental (sin inputs)
   const renderClozeQuestion = (text) => {
     if (!text) return null;
     const parts = text.split(/(\[.*?\])/g);
@@ -71,33 +78,21 @@ function FlashcardContent() {
       <div className="flex flex-wrap items-center justify-center gap-x-1.5 gap-y-4 leading-relaxed text-center max-w-4xl mx-auto px-2">
         {parts.map((part, index) => {
           if (part.startsWith('[') && part.endsWith(']')) {
-            const word = part.substring(1, part.length - 1);
-            const inputIndex = index;
             return (
-              <input
-                key={index}
-                type="text"
-                value={clozeAnswers[inputIndex] || ''}
-                onChange={(e) => setClozeAnswers(prev => ({ ...prev, [inputIndex]: e.target.value }))}
-                onClick={(e) => e.stopPropagation()}
-                style={{ width: `${Math.max(word.length + 1, 3)}ch` }}
-                className={`px-2 py-0.5 border-b-2 sm:border-b-4 outline-none transition-all text-center font-black text-xl sm:text-3xl ${
-                  isDark 
-                    ? 'bg-blue-500/5 border-blue-500/50 focus:border-blue-400 text-white' 
-                    : 'bg-blue-50/50 border-blue-300 focus:border-blue-500 text-[#2E4A70]'
-                }`}
-                placeholder="..."
-              />
+              <span 
+                key={index} 
+                className="inline-block w-20 h-6 border-b-2 border-[#2E4A70] bg-gray-50/50 mx-1 align-middle rounded-sm"
+              ></span>
             );
           }
-          return <span key={index} className="text-xl sm:text-4xl font-black">{part}</span>;
+          return <span key={index} className="text-xl sm:text-2xl font-black">{part}</span>;
         })}
       </div>
     );
   };
 
-  // Función para renderizar la comparación Cloze en el reverso
-  const renderClozeComparison = (text) => {
+  // Función para renderizar la solución Cloze en el reverso
+  const renderClozeAnswer = (text) => {
     if (!text) return null;
     const parts = text.split(/(\[.*?\])/g);
     return (
@@ -105,22 +100,10 @@ function FlashcardContent() {
         {parts.map((part, index) => {
           if (part.startsWith('[') && part.endsWith(']')) {
             const word = part.substring(1, part.length - 1);
-            const userAns = clozeAnswers[index] || '';
-            const isCorrect = userAns.toLowerCase().trim() === word.toLowerCase().trim();
-            
             return (
-              <div key={index} className="flex flex-col items-center bg-black/5 dark:bg-white/5 p-2 rounded-xl border border-black/5 dark:border-white/5">
-                <span className="text-xl sm:text-2xl font-black text-blue-500 underline decoration-blue-500/30">
-                  {word}
-                </span>
-                <span className={`text-[9px] sm:text-[10px] font-black uppercase tracking-tighter px-2 py-0.5 rounded-md mt-1.5 ${
-                  isCorrect 
-                    ? 'bg-green-500/10 text-green-500 border border-green-500/20' 
-                    : 'bg-red-500/10 text-red-500 border border-red-500/20'
-                }`}>
-                  Tú: {userAns || "___"}
-                </span>
-              </div>
+              <span key={index} className="text-xl sm:text-2xl font-black text-blue-600 bg-blue-500/10 px-2 py-1 rounded-lg border border-blue-500/20">
+                {word}
+              </span>
             );
           }
           return <span key={index} className="text-xl sm:text-2xl font-black opacity-80">{part}</span>;
@@ -139,15 +122,6 @@ function FlashcardContent() {
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (sessionFinished || cards.length === 0 || loading) return;
-      
-      // Si el usuario está escribiendo en un input o textarea, no procesar atajos de teclado globales
-      if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
-        if (e.key === 'Enter' && !e.shiftKey && !isFlipped) {
-          e.preventDefault();
-          setIsFlipped(true);
-        }
-        return;
-      }
 
       if (e.code === 'Space') {
         e.preventDefault();
@@ -162,15 +136,13 @@ function FlashcardContent() {
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [isFlipped, sessionFinished, cards.length, loading, currentIndex, clozeAnswers]);
+  }, [isFlipped, sessionFinished, cards.length, loading, currentIndex]);
 
   const loadCards = async (forceAll = false) => {
     setLoading(true);
     setSessionFinished(false);
     setIsFlipped(false);
     setCurrentIndex(0);
-    setUserAnswer(''); 
-    setClozeAnswers({});
     try {
       const mode = searchParams.get('mode');
       let fetchedCards = [];
@@ -204,8 +176,6 @@ function FlashcardContent() {
     
     if (currentIndex < cards.length - 1) {
       setIsFlipped(false);
-      setUserAnswer(''); 
-      setClozeAnswers({});
       setTimeout(() => setCurrentIndex(prev => prev + 1), 100);
     } else {
       setSessionFinished(true);
@@ -215,16 +185,12 @@ function FlashcardContent() {
   const handlePrev = () => {
     if (currentIndex > 0) {
       setIsFlipped(false);
-      setUserAnswer(''); 
-      setClozeAnswers({});
       setTimeout(() => setCurrentIndex(prev => prev - 1), 100);
     }
   };
 
   const handleJumpTo = (index) => {
     setIsFlipped(false);
-    setUserAnswer(''); 
-    setClozeAnswers({});
     setCurrentIndex(index);
   };
 
@@ -251,8 +217,6 @@ function FlashcardContent() {
     // Lógica del Botón "Olvido" (1)
     if (rating === 1) {
       setIsFlipped(false);
-      setUserAnswer('');
-      setClozeAnswers({});
       // Permanecer en el mismo currentIndex para obligar al re-estudio inmediato
     } else {
       handleNext();
@@ -405,39 +369,31 @@ function FlashcardContent() {
                     <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest border-2 ${
                       isDark ? 'bg-purple-900/20 border-purple-500/30 text-purple-400' : 'bg-purple-50 border-purple-200 text-purple-600'
                     }`}>
-                      {currentCard?.tipo || (isClozeType ? 'Completar Espacios' : 'Pregunta-Respuesta')}
+                      {currentCard?.tipo || (isClozeType ? 'Completar Espacios' : 'Pregunta')}
                     </span>
                   </div>
 
-                  <div className="max-w-4xl w-full flex flex-col items-center relative z-20 my-auto">
-                    {isClozeType ? (
-                      renderClozeQuestion(currentCard?.pregunta)
-                    ) : (
-                      <>
-                        <h3 className="text-2xl sm:text-4xl font-black leading-[1.2] tracking-tight mb-8">
+                  <div className="max-w-4xl w-full flex flex-col items-center relative z-20 py-20">
+                    <div 
+                      className="w-full max-h-[300px] overflow-y-auto overflow-x-hidden custom-scrollbar pr-2 mb-6 break-words"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {isClozeType ? (
+                        renderClozeQuestion(currentCard?.pregunta)
+                      ) : (
+                        <h3 className="text-xl sm:text-2xl font-black leading-relaxed tracking-tight text-center break-words whitespace-pre-wrap">
                           {currentCard?.pregunta}
                         </h3>
-                        
-                        {/* Input de Interacción Directa (Solo para QA) */}
-                        <div className="w-full max-w-2xl mb-8" onClick={(e) => e.stopPropagation()}>
-                          <textarea 
-                            rows="3"
-                            value={userAnswer}
-                            onChange={(e) => setUserAnswer(e.target.value)}
-                            placeholder="Escribe tu respuesta mental aquí para validar..."
-                            className={`w-full px-6 py-4 rounded-2xl border-2 outline-none transition-all text-lg font-medium ${
-                              isDark 
-                                ? 'bg-gray-900 border-gray-700 focus:border-blue-500 text-white' 
-                                : 'bg-gray-50 border-gray-100 focus:border-blue-400 text-gray-800'
-                            }`}
-                          />
-                        </div>
-                      </>
-                    )}
+                      )}
+                    </div>
 
                     {cardImageUrl && (
-                      <div className="flex justify-center bg-black/5 rounded-2xl p-4 w-full shadow-inner border border-gray-200 dark:border-gray-700 mt-6">
-                        <img src={cardImageUrl} alt="Referencia" className="max-w-full max-h-[350px] rounded-xl object-contain shadow-md" />
+                      <div className="flex justify-center bg-black/5 rounded-2xl p-4 w-full shadow-inner border border-gray-200 dark:border-gray-700">
+                        <img 
+                          src={cardImageUrl} 
+                          alt="Referencia" 
+                          className="max-h-48 md:max-h-64 w-auto object-contain mx-auto rounded-lg shadow-sm" 
+                        />
                       </div>
                     )}
                   </div>
@@ -457,35 +413,22 @@ function FlashcardContent() {
                     onClick={(e) => e.stopPropagation()}
                   >
                     
-                    {/* UI de Comparación */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 w-full items-start">
+                    {/* UI de Respuesta */}
+                    <div className="w-full">
                       {isClozeType ? (
-                        <div className={`p-8 rounded-3xl border-2 col-span-1 md:col-span-2 ${isDark ? 'bg-blue-500/10 border-blue-500/20' : 'bg-blue-50 border-blue-100'}`}>
-                          <span className="text-[10px] font-black uppercase tracking-widest opacity-60 mb-8 block text-blue-600 text-center">Revisión de Respuesta Inline</span>
-                          {renderClozeComparison(currentCard?.pregunta)}
+                        <div className={`p-8 rounded-3xl border-2 ${isDark ? 'bg-blue-500/10 border-blue-500/20' : 'bg-blue-50 border-blue-100'}`}>
+                          <span className="text-[10px] font-black uppercase tracking-widest opacity-60 mb-8 block text-blue-600 text-center">Texto Completado</span>
+                          {renderClozeAnswer(currentCard?.pregunta)}
                         </div>
                       ) : (
-                        <>
-                          {/* Tu Respuesta */}
-                          <div className={`p-6 rounded-3xl border-2 flex flex-col items-center justify-start text-center min-h-[250px] ${isDark ? 'bg-gray-900/50 border-gray-800' : 'bg-white border-gray-100 shadow-sm'}`}>
-                            <span className="text-[10px] font-black uppercase tracking-widest opacity-40 mb-3 block text-blue-500">Tu respuesta:</span>
-                            <div className="w-full overflow-y-auto overflow-x-hidden custom-scrollbar max-h-[300px] px-2">
-                              <p className={`text-xl font-bold italic whitespace-pre-wrap break-words text-left w-full ${!userAnswer ? 'opacity-20 text-center' : ''} ${isDark ? 'text-white' : 'text-[#2E4A70]'}`}>
-                                {userAnswer || "(No escribiste nada)"}
-                              </p>
-                            </div>
+                        <div className={`p-8 rounded-3xl border-2 flex flex-col items-center justify-start text-center min-h-[200px] ${isDark ? 'bg-blue-500/10 border-blue-500/20' : 'bg-blue-50 border-blue-100'}`}>
+                          <span className="text-[10px] font-black uppercase tracking-widest opacity-60 mb-6 block text-blue-600">Respuesta Correcta</span>
+                          <div className="w-full overflow-y-auto custom-scrollbar max-h-[300px] px-2">
+                            <p className={`text-xl sm:text-2xl font-black whitespace-pre-wrap break-words text-center w-full ${isDark ? 'text-white' : 'text-[#2E4A70]'}`}>
+                              {currentCard?.respuesta}
+                            </p>
                           </div>
-
-                          {/* Respuesta Correcta */}
-                          <div className={`p-6 rounded-3xl border-2 flex flex-col items-center justify-start text-center min-h-[250px] ${isDark ? 'bg-blue-500/10 border-blue-500/20' : 'bg-blue-50 border-blue-100'}`}>
-                            <span className="text-[10px] font-black uppercase tracking-widest opacity-60 mb-3 block text-blue-600">Respuesta Correcta:</span>
-                            <div className="w-full overflow-y-auto overflow-x-hidden custom-scrollbar max-h-[300px] px-2">
-                              <p className={`text-xl sm:text-2xl font-black whitespace-pre-wrap break-words text-left w-full ${isDark ? 'text-white' : 'text-[#2E4A70]'}`}>
-                                {currentCard?.respuesta}
-                              </p>
-                            </div>
-                          </div>
-                        </>
+                        </div>
                       )}
                     </div>
 
@@ -566,17 +509,30 @@ function FlashcardContent() {
             </div>
 
             {/* Controles Navegación */}
-            <div className="flex items-center justify-between mt-8 px-4 sm:px-10">
-              <button onClick={(e) => { e.stopPropagation(); handlePrev(); }} disabled={currentIndex === 0} className={`flex items-center gap-3 px-8 py-4 rounded-2xl font-black transition-all ${currentIndex === 0 ? 'opacity-20 cursor-not-allowed' : 'bg-white dark:bg-gray-800 shadow-xl hover:-translate-x-2'}`}><ArrowLeft className="w-5 h-5" /> ANTERIOR</button>
-              <button onClick={(e) => { e.stopPropagation(); handleFlip(); }} className="p-4 bg-blue-600 text-white rounded-2xl shadow-xl hover:rotate-12 transition-all active:scale-90"><RotateCw className="w-6 h-6" /></button>
+            <div className="flex items-center justify-between mt-6 sm:mt-8 gap-2 sm:gap-4 px-1 sm:px-10">
+              <button 
+                onClick={(e) => { e.stopPropagation(); handlePrev(); }} 
+                disabled={currentIndex === 0} 
+                className={`flex items-center justify-center gap-1 sm:gap-3 px-3 sm:px-8 py-3 sm:py-4 rounded-xl sm:rounded-2xl font-black transition-all flex-1 sm:flex-none ${currentIndex === 0 ? 'opacity-20 cursor-not-allowed' : 'bg-white dark:bg-gray-800 shadow-xl hover:-translate-x-2'}`}
+              >
+                <ArrowLeft className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" /> 
+                <span className="text-[10px] sm:text-sm tracking-tighter sm:tracking-normal">ANTERIOR</span>
+              </button>
+              <button 
+                onClick={(e) => { e.stopPropagation(); handleFlip(); }} 
+                className="p-3 sm:p-4 bg-blue-600 text-white rounded-xl sm:rounded-2xl shadow-xl hover:rotate-12 transition-all active:scale-90 flex-shrink-0"
+              >
+                <RotateCw className="w-5 h-5 sm:w-6 sm:h-6" />
+              </button>
               <button 
                 onClick={(e) => { e.stopPropagation(); handleNext(); }} 
                 disabled={isFlipped && !currentCard?.isRated}
-                className={`flex items-center gap-3 px-8 py-4 bg-white dark:bg-gray-800 rounded-2xl font-black shadow-xl transition-all text-blue-500 ${
+                className={`flex items-center justify-center gap-1 sm:gap-3 px-3 sm:px-8 py-3 sm:py-4 bg-white dark:bg-gray-800 rounded-xl sm:rounded-2xl font-black shadow-xl transition-all text-blue-500 flex-1 sm:flex-none ${
                   (isFlipped && !currentCard?.isRated) ? 'opacity-20 cursor-not-allowed' : 'hover:translate-x-2'
                 }`}
               >
-                SIGUIENTE <ChevronRight className="w-5 h-5" />
+                <span className="text-[10px] sm:text-sm tracking-tighter sm:tracking-normal">SIGUIENTE</span> 
+                <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0" />
               </button>
             </div>
           </div>
