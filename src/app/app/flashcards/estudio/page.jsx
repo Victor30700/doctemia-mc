@@ -75,17 +75,17 @@ function FlashcardContent() {
     if (!text) return null;
     const parts = text.split(/(\[.*?\])/g);
     return (
-      <div className="flex flex-wrap items-center justify-center gap-x-1.5 gap-y-4 leading-relaxed text-center max-w-4xl mx-auto px-2">
+      <div className="flex flex-wrap items-center justify-center gap-x-1.5 gap-y-6 leading-relaxed text-center max-w-4xl mx-auto px-2">
         {parts.map((part, index) => {
           if (part.startsWith('[') && part.endsWith(']')) {
             return (
               <span 
                 key={index} 
-                className="inline-block w-20 h-6 border-b-2 border-[#2E4A70] bg-gray-50/50 mx-1 align-middle rounded-sm"
+                className="inline-block w-24 h-8 border-b-4 border-[#2E4A70] bg-gray-50/50 mx-1 align-middle rounded-sm"
               ></span>
             );
           }
-          return <span key={index} className="text-xl sm:text-2xl font-black">{part}</span>;
+          return <span key={index} className="text-2xl sm:text-4xl font-black">{part}</span>;
         })}
       </div>
     );
@@ -96,17 +96,17 @@ function FlashcardContent() {
     if (!text) return null;
     const parts = text.split(/(\[.*?\])/g);
     return (
-      <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-6 leading-relaxed text-center max-w-4xl mx-auto">
+      <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-8 leading-relaxed text-center max-w-5xl mx-auto">
         {parts.map((part, index) => {
           if (part.startsWith('[') && part.endsWith(']')) {
             const word = part.substring(1, part.length - 1);
             return (
-              <span key={index} className="text-xl sm:text-2xl font-black text-blue-600 bg-blue-500/10 px-2 py-1 rounded-lg border border-blue-500/20">
+              <span key={index} className="text-2xl sm:text-4xl font-black text-blue-600 bg-blue-500/10 px-4 py-2 rounded-2xl border-2 border-blue-500/30 shadow-sm">
                 {word}
               </span>
             );
           }
-          return <span key={index} className="text-xl sm:text-2xl font-black opacity-80">{part}</span>;
+          return <span key={index} className="text-2xl sm:text-4xl font-black opacity-90">{part}</span>;
         })}
       </div>
     );
@@ -329,37 +329,37 @@ function FlashcardContent() {
   const cardImageUrl = getDriveImageUrl(currentCard?.driveUrl);
 
   return (
-    <div className={`p-4 sm:p-10 min-h-screen transition-all duration-500 flex flex-col ${isDark ? 'bg-[#1a2639] text-white' : 'bg-[#FDF9F1] text-[#2E4A70]'}`}>
-      <div className="max-w-7xl mx-auto w-full flex-grow flex flex-col">
+    <div className={`p-2 sm:p-10 min-h-screen transition-all duration-500 flex flex-col ${isDark ? 'bg-[#1a2639] text-white' : 'bg-[#FDF9F1] text-[#2E4A70]'}`}>
+      <div className="max-w-7xl mx-auto w-full flex-grow flex flex-col px-1 sm:px-0">
 
         {/* Header (Clon de Diseño Premium) */}
-        <div className="text-center mb-10 mt-6">
-          <h1 className="text-5xl font-bold bg-gradient-to-r from-[#2E4A70] to-[#3B82F6] bg-clip-text text-transparent mb-4">
+        <div className="text-center mb-6 sm:mb-10 mt-4 sm:mt-6">
+          <h1 className="text-3xl sm:text-5xl font-bold bg-gradient-to-r from-[#2E4A70] to-[#3B82F6] bg-clip-text text-transparent mb-2 sm:mb-4">
             {searchParams.get('mode') === 'review_weakness' ? 'Tus Tarjetas Críticas' : subtema}
           </h1>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+          <p className="text-base sm:text-xl text-gray-600 max-w-2xl mx-auto px-4">
             {searchParams.get('mode') === 'review_weakness' 
-              ? 'Conceptos que requieren refuerzo inmediato para dominar el tema.' 
-              : 'Sesión de aprendizaje activa con repetición espaciada.'}
+              ? 'Conceptos que requieren refuerzo inmediato.' 
+              : 'Sesión de aprendizaje activa.'}
           </p>
         </div>
 
         {/* Grid de Estudio */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 flex-grow mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-10 flex-grow mb-8">
           
           {/* Columna Tarjeta */}
           <div className="lg:col-span-9 flex flex-col">
-            <div className={`p-8 sm:p-10 border border-gray-100 rounded-[2rem] shadow-xl shadow-gray-200/50 bg-gradient-to-br from-orange-50 via-white to-blue-50 animate-gradient-shift flex flex-col`}>
-              <div className="w-full h-2.5 bg-black/5 dark:bg-white/5 rounded-full mb-8 overflow-hidden p-0.5 border border-white/10 shadow-inner">
+            <div className={`p-4 sm:p-10 border border-gray-100 rounded-[2rem] shadow-xl shadow-gray-200/50 bg-gradient-to-br from-orange-50 via-white to-blue-50 animate-gradient-shift flex flex-col`}>
+              <div className="w-full h-2 bg-black/5 dark:bg-white/5 rounded-full mb-6 sm:mb-8 overflow-hidden p-0.5 border border-white/10 shadow-inner">
                 <div className="h-full bg-gradient-to-r from-blue-500 to-indigo-600 rounded-full transition-all duration-700 ease-out shadow-[0_0_15px_rgba(59,130,246,0.5)]" style={{ width: `${progress}%` }} />
               </div>
 
-              <div className="relative w-full perspective-2000 flex-grow h-[60vh] min-h-[450px] max-h-[750px]">
+              <div className="relative w-full perspective-2000 flex-grow h-[65vh] sm:h-[75vh] min-h-[500px] sm:min-h-[550px] max-h-[950px]">
               <div className={`relative w-full h-full transition-all duration-[800ms] preserve-3d cursor-pointer group-card ${isFlipped ? 'rotate-y-180' : ''}`}>
                 
                 {/* Cara Frontal */}
                 <div 
-                  className={`absolute inset-0 w-full h-full backface-hidden p-8 sm:p-12 rounded-[3rem] shadow-[0_30px_60px_-15px_rgba(0,0,0,0.3)] border-2 flex flex-col items-center justify-center text-center transition-all overflow-y-auto ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-white'}`}
+                  className={`absolute inset-0 w-full h-full backface-hidden p-4 sm:p-10 rounded-[2.5rem] sm:rounded-[3rem] shadow-[0_30px_60px_-15px_rgba(0,0,0,0.3)] border-2 flex flex-col items-center justify-center text-center transition-all overflow-y-auto ${isDark ? 'bg-gray-800 border-gray-700' : 'bg-white border-white'}`}
                   onClick={handleFlip}
                 >
                   <div className="absolute top-8 left-8 flex items-center gap-3 opacity-20 z-10"><BrainCircuit className="w-6 h-6" /><span className="text-xs font-black uppercase tracking-widest">Pregunta</span></div>
@@ -375,13 +375,13 @@ function FlashcardContent() {
 
                   <div className="max-w-4xl w-full flex flex-col items-center relative z-20 py-20">
                     <div 
-                      className="w-full max-h-[300px] overflow-y-auto overflow-x-hidden custom-scrollbar pr-2 mb-6 break-words"
+                      className="w-full max-h-[350px] overflow-y-auto overflow-x-hidden custom-scrollbar pr-2 mb-6 break-words"
                       onClick={(e) => e.stopPropagation()}
                     >
                       {isClozeType ? (
                         renderClozeQuestion(currentCard?.pregunta)
                       ) : (
-                        <h3 className="text-xl sm:text-2xl font-black leading-relaxed tracking-tight text-center break-words whitespace-pre-wrap">
+                        <h3 className="text-2xl sm:text-4xl font-black leading-tight tracking-tight text-center break-words whitespace-pre-wrap">
                           {currentCard?.pregunta}
                         </h3>
                       )}
@@ -402,29 +402,29 @@ function FlashcardContent() {
 
                 {/* Cara Trasera */}
                 <div 
-                  className={`absolute inset-0 w-full h-full backface-hidden rotate-y-180 p-8 sm:p-12 rounded-[3rem] shadow-[0_30px_60px_-15px_rgba(0,0,0,0.3)] border-2 flex flex-col transition-all overflow-hidden ${isDark ? 'bg-[#1e293b] border-blue-500/30 z-20' : 'bg-[#f8fafc] border-blue-200 z-20'}`}
+                  className={`absolute inset-0 w-full h-full backface-hidden rotate-y-180 p-6 sm:p-10 rounded-[3rem] shadow-[0_30px_60px_-15px_rgba(0,0,0,0.3)] border-2 flex flex-col transition-all overflow-hidden ${isDark ? 'bg-[#1e293b] border-blue-500/30 z-20' : 'bg-[#f8fafc] border-blue-200 z-20'}`}
                   onClick={(e) => e.stopPropagation()}
                 >
                   <div className="flex items-center gap-3 mb-6 text-green-500"><div className="p-2 bg-green-500/10 rounded-xl"><CheckCircle2 className="w-6 h-6" /></div><span className="text-sm font-black uppercase tracking-widest">Respuesta y Validación</span></div>
                   
                   {/* Área de contenido con scroll - stopPropagation añadido para permitir scroll sin voltear */}
                   <div 
-                    className="flex-1 min-h-0 overflow-y-auto pr-2 custom-scrollbar space-y-8 pb-4"
+                    className="flex-1 min-h-0 overflow-y-auto pr-2 custom-scrollbar space-y-10 pb-6"
                     onClick={(e) => e.stopPropagation()}
                   >
                     
                     {/* UI de Respuesta */}
                     <div className="w-full">
                       {isClozeType ? (
-                        <div className={`p-8 rounded-3xl border-2 ${isDark ? 'bg-blue-500/10 border-blue-500/20' : 'bg-blue-50 border-blue-100'}`}>
-                          <span className="text-[10px] font-black uppercase tracking-widest opacity-60 mb-8 block text-blue-600 text-center">Texto Completado</span>
+                        <div className={`p-6 sm:p-10 rounded-3xl border-2 ${isDark ? 'bg-blue-500/10 border-blue-500/20' : 'bg-blue-50 border-blue-100 shadow-sm'}`}>
+                          <span className="text-[10px] font-black uppercase tracking-widest opacity-60 mb-10 block text-blue-600 text-center">Texto Completado</span>
                           {renderClozeAnswer(currentCard?.pregunta)}
                         </div>
                       ) : (
-                        <div className={`p-8 rounded-3xl border-2 flex flex-col items-center justify-start text-center min-h-[200px] ${isDark ? 'bg-blue-500/10 border-blue-500/20' : 'bg-blue-50 border-blue-100'}`}>
-                          <span className="text-[10px] font-black uppercase tracking-widest opacity-60 mb-6 block text-blue-600">Respuesta Correcta</span>
-                          <div className="w-full overflow-y-auto custom-scrollbar max-h-[300px] px-2">
-                            <p className={`text-xl sm:text-2xl font-black whitespace-pre-wrap break-words text-center w-full ${isDark ? 'text-white' : 'text-[#2E4A70]'}`}>
+                        <div className={`p-6 sm:p-10 rounded-3xl border-2 flex flex-col items-center justify-start text-center min-h-[250px] ${isDark ? 'bg-blue-500/10 border-blue-500/20' : 'bg-blue-50 border-blue-100 shadow-sm'}`}>
+                          <span className="text-[10px] font-black uppercase tracking-widest opacity-60 mb-8 block text-blue-600">Respuesta Correcta</span>
+                          <div className="w-full px-2">
+                            <p className={`text-2xl sm:text-4xl font-black whitespace-pre-wrap break-words text-center w-full leading-tight ${isDark ? 'text-white' : 'text-[#2E4A70]'}`}>
                               {currentCard?.respuesta}
                             </p>
                           </div>
@@ -433,9 +433,14 @@ function FlashcardContent() {
                     </div>
 
                     {currentCard?.explicacion && (
-                      <div className={`p-8 rounded-[2rem] border-2 flex gap-5 backdrop-blur-md max-w-3xl mx-auto w-full ${isDark ? 'bg-gray-900/50 border-gray-700 text-gray-300' : 'bg-white border-blue-100 text-gray-600 shadow-xl'}`}>
-                        <div className="p-3 bg-blue-500/10 rounded-2xl h-fit"><Info className="w-6 h-6 text-blue-500" /></div>
-                        <div><span className="block font-black text-[10px] uppercase tracking-[0.2em] text-blue-500 mb-2">Explicación</span><p className="text-base leading-relaxed font-medium italic">{currentCard.explicacion}</p></div>
+                      <div className={`p-6 sm:p-8 rounded-[2rem] border-2 flex flex-col sm:flex-row gap-5 backdrop-blur-md max-w-5xl mx-auto w-full ${isDark ? 'bg-gray-900/50 border-gray-700 text-gray-300' : 'bg-white border-blue-100 text-gray-600 shadow-xl'}`}>
+                        <div className="p-3 bg-blue-500/10 rounded-2xl h-fit w-fit"><Info className="w-6 h-6 text-blue-500" /></div>
+                        <div>
+                          <span className="block font-black text-[10px] uppercase tracking-[0.2em] text-blue-500 mb-3">Explicación Técnica</span>
+                          <p className="text-lg leading-relaxed font-medium italic">
+                            {currentCard.explicacion}
+                          </p>
+                        </div>
                       </div>
                     )}
                   </div>

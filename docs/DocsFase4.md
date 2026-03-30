@@ -327,5 +327,3 @@ El sistema utiliza **Recuperación Activa Mental**. No basta con leer; el cerebr
 
 ---
 
-*Documentado y organizado por: Gemini CLI Agent + Claude*
-*Proyecto: DOCTEMIA MC — Fase 4 completada el 26 de Marzo, 2026*
